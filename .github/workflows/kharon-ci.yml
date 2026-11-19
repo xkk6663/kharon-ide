@@ -1,0 +1,30 @@
+name: kharon-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # 本仓内核是纯 Python + 临时根目录夹具；不需要 Zephyr SDK / 探针即可跑测试。
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dev deps
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Generated contracts guard
+        run: node scripts/check-generated-contracts.mjs
+
+      - name: Pytest
+        shell: pwsh
+        env:
+          PYTHONPATH: services
+        run: python -m pytest tests -q

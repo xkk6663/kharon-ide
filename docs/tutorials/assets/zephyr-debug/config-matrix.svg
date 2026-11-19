@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <rect x="0" y="0" width="980" height="560" fill="#fbfcfe"/>
+
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">四个 Kconfig 开关，决定 Zephyr 页签能看到多少</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">f411_breath 的 prj.conf 是刻意最小化的：四项全关 → 只能从就绪队列推出两个线程，栈水位不可测</text>
+
+  <!-- 表头 -->
+  <text x="24" y="88" font-size="10.5" font-weight="600" fill="#64748b">开关</text>
+  <text x="270" y="88" font-size="10.5" font-weight="600" fill="#64748b">关（本轮现状）</text>
+  <text x="606" y="88" font-size="10.5" font-weight="600" fill="#64748b">开（解锁）</text>
+
+  <!-- row 1 -->
+  <rect x="24" y="100" width="932" height="86" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="24" y="100" width="230" height="86" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="40" y="128" font-size="11" font-weight="600" fill="#0f172a">CONFIG_THREAD_MONITOR</text>
+  <text x="40" y="148" font-size="9.5" fill="#94a3b8">线程总表</text>
+  <circle cx="40" cy="166" r="4" fill="#94a3b8"/>
+  <text x="50" y="170" font-size="9.5" fill="#64748b">默认 n（本轮）</text>
+
+  <rect x="270" y="112" width="316" height="62" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="284" y="134" font-size="10" fill="#475569">线程表只能从 _kernel.ready_q.runq 推</text>
+  <text x="284" y="154" font-size="10" fill="#475569">阻塞 / 挂起线程不可见 → 只有 2 行</text>
+
+  <rect x="606" y="112" width="334" height="62" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="620" y="134" font-size="10" fill="#047857">沿 _kernel.threads 走全表（含阻塞/挂起）</text>
+  <text x="620" y="154" font-size="10" fill="#047857">线程数 = 你实际创建的数量</text>
+
+  <!-- row 2 -->
+  <rect x="24" y="198" width="932" height="86" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="24" y="198" width="230" height="86" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="40" y="226" font-size="11" font-weight="600" fill="#0f172a">CONFIG_THREAD_NAME</text>
+  <text x="40" y="246" font-size="9.5" fill="#94a3b8">k_thread 里存名字</text>
+  <circle cx="40" cy="264" r="4" fill="#94a3b8"/>
+  <text x="50" y="268" font-size="9.5" fill="#64748b">默认 n（本轮）</text>
+
+  <rect x="270" y="210" width="316" height="62" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="284" y="232" font-size="10" fill="#475569">线程名全是 (unnamed)</text>
+  <text x="284" y="252" font-size="10" fill="#475569">只能靠 TCB 地址区分</text>
+
+  <rect x="606" y="210" width="334" height="62" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="620" y="232" font-size="10" fill="#047857">显示 z_main_thread / z_idle_thread …</text>
+  <text x="620" y="252" font-size="10" fill="#047857">k_thread 增加 CONFIG_THREAD_MAX_NAME_LEN</text>
+
+  <!-- row 3 -->
+  <rect x="24" y="296" width="932" height="86" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="24" y="296" width="230" height="86" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="40" y="324" font-size="11" font-weight="600" fill="#0f172a">CONFIG_INIT_STACKS</text>
+  <text x="40" y="344" font-size="9.5" fill="#94a3b8">栈填 0xAA</text>
+  <circle cx="40" cy="362" r="4" fill="#94a3b8"/>
+  <text x="50" y="366" font-size="9.5" fill="#64748b">默认 n（本轮）</text>
+
+  <rect x="270" y="308" width="316" height="62" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="284" y="330" font-size="10" fill="#475569">栈里没有 0xAA，栈水位 / 使用率 = —</text>
+  <text x="284" y="350" font-size="10" fill="#475569">内存页看到的是随机字节（本轮 4f f4 48 …）</text>
+
+  <rect x="606" y="308" width="334" height="62" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="620" y="330" font-size="10" fill="#047857">从 stack.start 向上数连续 0xAA 字</text>
+  <text x="620" y="350" font-size="10" fill="#047857">得到 free_bytes / used_pct（≥90% 标红）</text>
+
+  <!-- row 4 -->
+  <rect x="24" y="394" width="932" height="86" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="24" y="394" width="230" height="86" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="40" y="422" font-size="11" font-weight="600" fill="#0f172a">CONFIG_OBJ_CORE</text>
+  <text x="40" y="442" font-size="9.5" fill="#94a3b8">运行时对象迭代段</text>
+  <circle cx="40" cy="460" r="4" fill="#94a3b8"/>
+  <text x="50" y="464" font-size="9.5" fill="#64748b">默认 n（本轮）</text>
+
+  <rect x="270" y="406" width="316" height="62" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="284" y="428" font-size="10" fill="#475569">只列静态定义：K_SEM_DEFINE / K_MUTEX_DEFINE…</text>
+  <text x="284" y="448" font-size="10" fill="#475569">运行时 k_sem_init 创建的不在迭代段里</text>
+
+  <rect x="606" y="406" width="334" height="62" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="620" y="428" font-size="10" fill="#047857">运行时对象也进 _k_&lt;type&gt;_list_start/end</text>
+  <text x="620" y="448" font-size="10" fill="#047857">页签底部的 sem/mutex/msgq… 计数才是全量</text>
+
+  <!-- 底注 -->
+  <rect x="24" y="494" width="932" height="56" rx="8" fill="#fff7ed" stroke="#f59e0b"/>
+  <text x="40" y="517" font-size="10.5" fill="#0f172a"><tspan font-weight="600">现状不是缺陷</tspan>：四项全关是 f411_breath 的「能跑起来的最小 Kconfig」，只回答「现在谁在跑」；要看全，改 prj.conf 再重编。</text>
+  <text x="40" y="539" font-size="10" fill="#92400e">面板只读构建产物（zephyr/.config + ELF），不会替你改配置；改了 prj.conf 必须重新 west build 才生效。</text>
+</svg>

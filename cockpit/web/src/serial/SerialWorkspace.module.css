@@ -1,0 +1,626 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  border-top: 1px solid var(--elab-border);
+}
+
+.toolbar,
+.subbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: 5px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  min-width: 0;
+}
+
+/* 控制项（复位预设 / DTR / RTS）会随能力增长 —— 窄面板下换行而不是被裁掉 */
+.toolbar {
+  flex-wrap: wrap;
+}
+
+.subbar {
+  background: color-mix(in srgb, var(--elab-bg-hover) 30%, transparent);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.select {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 4px;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-secondary);
+  background: var(--elab-bg-surface);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+  cursor: pointer;
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search {
+  flex: 0 1 260px;
+  min-width: 120px;
+}
+
+.meta {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── 提示条 ── */
+.warn,
+.info {
+  flex: 0 0 auto;
+  padding: 5px var(--elab-space-3);
+  font-size: var(--elab-fs-xs);
+  line-height: 1.5;
+  border-bottom: 1px solid var(--elab-border);
+}
+
+.warn {
+  color: var(--elab-status-fail);
+  background: color-mix(in srgb, var(--elab-status-fail) 10%, transparent);
+}
+
+.info {
+  color: var(--elab-status-run);
+  background: color-mix(in srgb, var(--elab-status-run) 10%, transparent);
+}
+
+/* ── 帧协议抽屉（M5）：左侧 JSON 编辑、右侧预览/字段表 ── */
+.framesDrawer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;
+  border-bottom: 1px solid var(--elab-border);
+  background: color-mix(in srgb, var(--elab-bg-hover) 20%, transparent);
+}
+
+.framesHead {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: 5px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  min-width: 0;
+}
+
+.framesBody {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+  gap: var(--elab-space-2);
+  padding: 8px var(--elab-space-3);
+  min-height: 0;
+  overflow: auto;
+}
+
+.framesEditor {
+  flex: 1 1 52%;
+  min-height: 160px;
+  resize: vertical;
+  padding: 6px;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  line-height: 1.5;
+  color: var(--elab-fg-primary);
+  background: var(--elab-bg-code);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+}
+
+.framesSide {
+  flex: 1 1 48%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.framesRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.framesPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.framesTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--elab-fs-xs);
+  font-family: var(--elab-font-mono);
+}
+
+.framesTable th,
+.framesTable td {
+  padding: 2px 6px;
+  text-align: left;
+  white-space: nowrap;
+  border: 1px solid var(--elab-border);
+}
+
+.framesTable th {
+  color: var(--elab-fg-secondary);
+  background: color-mix(in srgb, var(--elab-bg-hover) 40%, transparent);
+}
+
+/* 抽屉内的提示条收敛成小块（继承 .warn/.info 语义，不再当成整行横幅） */
+.framesSide .warn,
+.framesSide .info {
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+  padding: 4px 6px;
+  white-space: pre-wrap;
+}
+
+/* ── 波形每通道坐标 / 游标测量（M7） ── */
+.axisPanel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 2px 8px 4px;
+}
+
+.axisRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.axisName {
+  font-size: var(--elab-fs-xs);
+  font-family: var(--elab-font-mono);
+  color: var(--elab-fg-secondary);
+  min-width: 56px;
+}
+
+.axisLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+}
+
+.axisInput {
+  width: 58px;
+  padding: 1px 4px;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-primary);
+  background: var(--elab-bg-code);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+}
+
+.measure {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px 6px;
+  border-top: 1px dashed var(--elab-border);
+  font-size: var(--elab-fs-xs);
+  font-family: var(--elab-font-mono);
+}
+
+.measureHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--elab-fg-secondary);
+}
+
+.measureStrong {
+  color: var(--elab-fg-primary);
+  font-weight: 600;
+}
+
+/* ── 滚动区 ── */
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--elab-bg-code);
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  line-height: 1.55;
+}
+
+.empty {
+  padding: var(--elab-space-4) var(--elab-space-3);
+  color: var(--elab-fg-faint);
+  font-family: var(--elab-font-sans);
+  font-size: var(--elab-fs-sm);
+  line-height: 1.6;
+}
+
+/* ── 行视图 ── */
+.lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.line {
+  display: flex;
+  gap: var(--elab-space-2);
+  padding: 0 var(--elab-space-3);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.line:hover {
+  background: var(--elab-bg-hover);
+}
+
+.time {
+  flex: 0 0 auto;
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.seq {
+  flex: 0 0 auto;
+  min-width: 42px;
+  color: var(--elab-fg-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hit {
+  padding: 0 1px;
+  color: var(--elab-fg-primary);
+  background: color-mix(in srgb, var(--elab-status-run) 35%, transparent);
+  border-radius: 2px;
+}
+
+/* ── 字节视图 ── */
+.bytesWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+}
+
+.block {
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+  overflow: hidden;
+  background: var(--elab-bg-surface);
+}
+
+.blockHead {
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: 2px var(--elab-space-2);
+  font-size: var(--elab-fs-xs);
+  border-bottom: 1px solid var(--elab-border);
+}
+
+.blockHead.rx {
+  color: var(--elab-status-ok);
+  background: color-mix(in srgb, var(--elab-status-ok) 8%, transparent);
+}
+
+.blockHead.tx {
+  color: var(--elab-status-run);
+  background: color-mix(in srgb, var(--elab-status-run) 10%, transparent);
+}
+
+.dirTag {
+  flex: 0 0 auto;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.blockMeta {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--elab-fg-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pre {
+  margin: 0;
+  padding: 4px var(--elab-space-2);
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--elab-fg-primary);
+}
+
+/* HEX 分类着色：控制字节 / DEL / 高位（可打印沿用默认前景；只引用令牌） */
+.hexGrid {
+  padding: 4px var(--elab-space-2);
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--elab-fg-primary);
+}
+
+.bCtl {
+  color: var(--elab-ansi-bright-yellow);
+}
+
+.bDel {
+  color: var(--elab-ansi-bright-red);
+}
+
+.bHigh {
+  color: var(--elab-ansi-bright-cyan);
+}
+
+.bPad {
+  color: var(--elab-fg-faint);
+}
+
+/* ── 终端视图 ── */
+.term {
+  padding: var(--elab-space-2) var(--elab-space-3);
+  white-space: pre;
+  min-height: 100%;
+}
+
+.termLine {
+  min-height: 1.55em;
+}
+
+/* ANSI 语义色（色值来自 tokens.css，随主题切换） */
+.a {
+  color: inherit;
+}
+
+.a-bold {
+  font-weight: 700;
+}
+
+.a-black { color: var(--elab-ansi-black); }
+.a-red { color: var(--elab-ansi-red); }
+.a-green { color: var(--elab-ansi-green); }
+.a-yellow { color: var(--elab-ansi-yellow); }
+.a-blue { color: var(--elab-ansi-blue); }
+.a-magenta { color: var(--elab-ansi-magenta); }
+.a-cyan { color: var(--elab-ansi-cyan); }
+.a-white { color: var(--elab-ansi-white); }
+
+.a-bright-black { color: var(--elab-ansi-bright-black); }
+.a-bright-red { color: var(--elab-ansi-bright-red); }
+.a-bright-green { color: var(--elab-ansi-bright-green); }
+.a-bright-yellow { color: var(--elab-ansi-bright-yellow); }
+.a-bright-blue { color: var(--elab-ansi-bright-blue); }
+.a-bright-magenta { color: var(--elab-ansi-bright-magenta); }
+.a-bright-cyan { color: var(--elab-ansi-bright-cyan); }
+.a-bright-white { color: var(--elab-ansi-bright-white); }
+
+/* ── 波形 ── */
+.wavePanel {
+  padding: var(--elab-space-2) var(--elab-space-3);
+}
+
+.waveBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-2);
+}
+
+.canvas {
+  width: 100%;
+  height: 220px;
+  display: block;
+  background: var(--elab-bg-surface);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--elab-space-3);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-secondary);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.waveMeta {
+  margin-top: var(--elab-space-2);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+}
+
+/* 帧级健康度（P3.1）：常态极淡，出错才显眼 —— 面板不该为"一切正常"抢眼 */
+.waveHealth {
+  display: inline-flex;
+  gap: var(--elab-space-2);
+  margin-left: var(--elab-space-2);
+  padding-left: var(--elab-space-2);
+  border-left: 1px solid var(--elab-border);
+}
+
+.waveHealthBad {
+  color: var(--elab-warn, #d98b00);
+}
+
+/* 采样诊断（verdict）：只在有处方时出现 —— 光有数字，用户还得自己当侦探 */
+.waveAdvice {
+  display: block;
+  margin-top: var(--elab-space-2);
+  padding: 4px 8px;
+  font-size: var(--elab-fs-xs);
+  line-height: 1.45;
+  color: var(--elab-fg-secondary);
+  background: rgba(217, 139, 0, 0.08);
+  border-left: 2px solid var(--elab-warn, #d98b00);
+  border-radius: 0 var(--elab-radius-sm) var(--elab-radius-sm) 0;
+}
+
+/* ── WaveChart V2 工具栏按钮 ── */
+.waveToolBtn {
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+  background: var(--elab-bg-surface);
+  color: var(--elab-fg-secondary);
+  cursor: pointer;
+  font-family: inherit;
+}
+.waveToolBtn:hover:not(:disabled) { background: var(--elab-bg-hover); color: var(--elab-fg-primary); }
+.waveToolBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── 多面板 viewport tab 条 ── */
+.waveVpBar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.waveVpTabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.waveVpTabRow {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+  overflow: hidden;
+}
+.waveVpTab {
+  padding: 3px 8px;
+  font-size: var(--elab-fs-xs);
+  background: var(--elab-bg-surface);
+  color: var(--elab-fg-secondary);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.waveVpTab:hover { color: var(--elab-fg-primary); }
+.waveVpTabActive { background: var(--elab-accent); color: #fff; }
+.waveVpTabClose {
+  padding: 3px 6px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--elab-fg-dimmed);
+  border: none;
+  border-left: 1px solid var(--elab-border);
+  cursor: pointer;
+  line-height: 1;
+}
+.waveVpTabClose:hover { color: var(--elab-accent); background: var(--elab-bg-hover); }
+.waveVpAdd {
+  padding: 3px 8px;
+  font-size: var(--elab-fs-xs);
+  background: transparent;
+  color: var(--elab-accent);
+  border: 1px dashed var(--elab-accent);
+  border-radius: var(--elab-radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+}
+.waveVpAdd:hover { background: var(--elab-accent); color: #fff; }
+
+/* ── 通道绑定 chip ── */
+.waveVpControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: var(--elab-fs-xs);
+}
+.waveVpLabel { color: var(--elab-fg-faint); }
+.waveChChip {
+  padding: 2px 6px;
+  font-size: var(--elab-fs-xs);
+  background: var(--elab-bg-surface);
+  color: var(--elab-fg-dimmed);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+}
+.waveChChip:hover { color: var(--elab-fg-primary); border-color: var(--elab-fg-dimmed); }
+.waveChChipOn {
+  background: var(--elab-accent);
+  color: #fff;
+  border-color: var(--elab-accent);
+}
+.waveVpSpacer { flex: 1 1 auto; }
+
+/* ── 发送面板 ── */
+.write {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-top: 1px solid var(--elab-border);
+  background: var(--elab-bg-surface);
+}
+
+.writeMain,
+.writeOpts {
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  min-width: 0;
+}
+
+.writeOpts {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.writeInput {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.writeIcon {
+  flex: 0 0 auto;
+  width: 13px;
+  color: var(--elab-fg-faint);
+}

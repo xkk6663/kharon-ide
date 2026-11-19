@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "source": "elab list --json",
+    "project": "f411_breath"
+  },
+  "shape": {
+    "arm_gcc_root": "<str>",
+    "arm_gcc_version": null,
+    "chips": [],
+    "elab_root": "<str>",
+    "host_yaml": "<str>",
+    "ninja": "<str>",
+    "openocd": "<str>",
+    "os": "<str>",
+    "pack_roots": [
+      "<str>"
+    ],
+    "packs": [
+      {
+        "chips": [
+          "<str>"
+        ],
+        "dir": "<str>",
+        "installed": "<bool>",
+        "name": "<str>",
+        "version": "<str>"
+      }
+    ],
+    "projects": [
+      {
+        "archetype": "<str>",
+        "chip": "<str>",
+        "name": "<str>",
+        "root": "<str>"
+      }
+    ],
+    "toolchains": []
+  }
+}

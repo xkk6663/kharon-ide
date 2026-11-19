@@ -1,0 +1,175 @@
+{
+  "_meta": {
+    "source": "GET /api/projects",
+    "project": "f411_breath"
+  },
+  "shape": {
+    "projects": [
+      {
+        "archetype": "<str>",
+        "artifacts": {
+          "bin": "<str>",
+          "elf": "<str>",
+          "hex": "<str>",
+          "map": "<str>"
+        },
+        "boot_owner": "<str>",
+        "build_type": "<str>",
+        "chip": "<str>",
+        "chip_info": {
+          "core": {},
+          "core_name": "<str>",
+          "debug": {
+            "addr2line_key": "<str>",
+            "device": "<str>",
+            "gdb_key": "<str>",
+            "openocd_config": "<str>",
+            "openocd_key": "<str>"
+          },
+          "family": "<str>",
+          "frequency": "<str>",
+          "id": "<str>",
+          "measured": {
+            "FLASH": {
+              "pct": "<num>",
+              "region": "<num>",
+              "used": "<num>"
+            },
+            "RAM": {
+              "pct": "<num>",
+              "region": "<num>",
+              "used": "<num>"
+            }
+          },
+          "memory": {},
+          "pack": "<str>",
+          "package": "<str>",
+          "part": "<str>",
+          "target": "<str>",
+          "vendor": "<str>"
+        },
+        "debug_backend": "<str>",
+        "debug_features": [
+          "<str>"
+        ],
+        "delegated": {
+          "build": "<bool>",
+          "debug_verify": "<bool>",
+          "doctor": "<bool>",
+          "doctor_deep": "<bool>",
+          "flash": "<bool>",
+          "monitor": "<bool>",
+          "report": "<bool>"
+        },
+        "derived": {
+          "built": "<bool>",
+          "work_dir_exists": "<bool>"
+        },
+        "generator": "<str>",
+        "linker_script": "<str>",
+        "matrix": "<str>",
+        "monitor": {
+          "close_on": "<num>",
+          "fail_on": "<num>",
+          "idle_timeout_s": "<num>"
+        },
+        "name": "<str>",
+        "ota": null,
+        "probe": "<str>",
+        "project_name": "<str>",
+        "provenance": {},
+        "provider": {
+          "available": "<bool>",
+          "name": "<str>",
+          "path": "<str>",
+          "reasons": [],
+          "source": "<str>",
+          "version": "<str>"
+        },
+        "root": "<str>",
+        "serial": {
+          "baud": "<num>",
+          "port": "<str>",
+          "reconnect": {
+            "enabled": "<bool>",
+            "max_attempts": "<num>",
+            "max_ms": "<num>",
+            "min_ms": "<num>"
+          }
+        },
+        "step_labels": {
+          "build": "<str>",
+          "debug_verify": "<str>",
+          "doctor": "<str>",
+          "flash": "<str>",
+          "monitor": "<str>",
+          "report": "<str>"
+        },
+        "steps": {
+          "build": {
+            "kind": "<str>",
+            "ok": "<bool>",
+            "reason": "<str>",
+            "source": "<str>",
+            "tool": "<str>"
+          },
+          "debug_verify": {
+            "kind": "<str>",
+            "ok": "<bool>",
+            "reason": "<str>",
+            "source": "<str>",
+            "tool": "<str>"
+          },
+          "doctor": {
+            "kind": "<str>",
+            "ok": "<bool>",
+            "reason": "<str>",
+            "source": "<str>",
+            "tool": "<str>"
+          },
+          "doctor_deep": {
+            "kind": "<str>",
+            "ok": "<bool>",
+            "reason": "<str>",
+            "source": "<str>",
+            "tool": "<str>"
+          },
+          "flash": {
+            "kind": "<str>",
+            "ok": "<bool>",
+            "reason": "<str>",
+            "source": "<str>",
+            "tool": "<str>"
+          },
+          "monitor": {
+            "kind": "<str>",
+            "ok": "<bool>",
+            "reason": "<str>",
+            "source": "<str>",
+            "tool": "<str>"
+          },
+          "report": {
+            "kind": "<str>",
+            "ok": "<bool>",
+            "reason": "<str>",
+            "source": "<str>",
+            "tool": "<str>"
+          }
+        },
+        "tools": [],
+        "work_dir": "<str>"
+      }
+    ],
+    "steps": {
+      "all": [
+        "<str>"
+      ],
+      "default": [
+        "<str>"
+      ],
+      "onhw": [
+        "<str>"
+      ]
+    }
+  }
+}

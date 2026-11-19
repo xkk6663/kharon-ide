@@ -1,0 +1,21 @@
+/*
+ * 新建工程的 Korvo-1（ESP32-S31）板级 overlay
+ *
+ * 文件名 = 板目标下划线化：esp32s31_function_coreboard/esp32s31/hpcore
+ *          -> esp32s31_function_coreboard_esp32s31_hpcore.overlay
+ *
+ * 一行 #include 就把 Korvo-1 的公共差异（PA_CTRL / WS2812@GPIO37 / adc0）带进来。
+ * 相对路径相对本文件（boards\），所以是 ../../common\。
+ * 本工程独有的节点往下加；不需要就删掉这一行。
+ */
+
+#include "../../common/korvo_board.dtsi"
+
+/* 示例：给本工程单独加一个"自己能找到"的别名
+ * （别名是"代码里的名字"，别和硬件节点名混为一谈）
+ */
+/ {
+	aliases {
+		my-pa = &pa_ctrl;
+	};
+};

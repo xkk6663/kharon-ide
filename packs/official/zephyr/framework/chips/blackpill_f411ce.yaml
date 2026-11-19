@@ -1,0 +1,27 @@
+# packs/official/zephyr/framework/chips/blackpill_f411ce.yaml
+#
+# board-as-chip：id 就是 board 名，target 就是 `west -b` 的值。
+# ★ 不写 memory / core / compiler_defines（红线，见 pack.yaml 头注释）。
+
+id: blackpill_f411ce
+vendor: zephyr
+platform: framework
+part: STM32F411CE          # 仅用于 UI 显示（板载芯片型号）
+target: blackpill_f411ce   # west -b 的值（单段 = 无 SoC/核限定符）
+core_name: Cortex-M4F
+
+serial:
+  baud: 115200
+
+debug:
+  # 三套 gdb 由芯片选键名，host 只记事实（T10：Host.tool(key) 通用访问器）
+  gdb_key: gdb_zephyr_arm
+  addr2line_key: addr2line_zephyr_arm
+  # 整份 cfg 通道：Zephyr 的 openocd 配置是 base+interface+target 混写的，
+  # 塞不进"interface + target 两段"的既有校验（见方案 §5.4 S3）
+  openocd_key: openocd
+  openocd_config: applications/stm32f4/common/dap_link_openocd.cfg
+  device: STM32F411CE
+
+flash:
+  runner: openocd

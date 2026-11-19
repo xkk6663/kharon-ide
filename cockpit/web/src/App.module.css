@@ -1,0 +1,230 @@
+.shell {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 顶栏元素 ── */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--elab-fg-primary);
+  white-space: nowrap;
+}
+.brand::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 2px;
+  background: var(--elab-accent-grad);
+  box-shadow: 0 0 0 1px var(--elab-border);
+}
+
+.ver {
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  white-space: nowrap;
+}
+
+/* 工作区模式开关（classic ⇄ zephyr）：紧挨品牌名 —— 它描述的是"这是哪个产品"，
+   不是"现在在哪个页面"，所以不该混在右侧那排工具按钮里。
+   ★ 切换期间整体降透明度且**挡住指针**：连点两次会让后端切两遍，
+     第二次基于"已切换"的状态再去判断 host，日志里会看到一组没意义的来回。 */
+.modeSwitch {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--elab-font-mono);
+  letter-spacing: 0.02em;
+}
+.modeBusy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.headerSpacer {
+  flex: 1 1 auto;
+}
+
+.serialChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-muted);
+  white-space: nowrap;
+}
+
+.serialIcon {
+  width: 12px;
+  color: var(--elab-fg-faint);
+}
+
+.fontCtl {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius-sm);
+  overflow: hidden;
+}
+
+.fontBtn {
+  border: 0;
+  padding: 2px 7px;
+  background: transparent;
+  color: var(--elab-fg-muted);
+  font: inherit;
+  font-size: var(--elab-fs-xs);
+  cursor: pointer;
+  transition: background 0.14s var(--elab-ease), color 0.14s var(--elab-ease);
+}
+.fontBtn:hover:not(:disabled) {
+  background: var(--elab-bg-hover);
+  color: var(--elab-fg-primary);
+}
+.fontBtn:active:not(:disabled) {
+  background: var(--elab-bg-active);
+}
+.fontBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 窄屏的工程下拉 */
+.select {
+  width: 100%;
+  max-width: 22rem;
+  padding: 3px 6px;
+  border: 1px solid var(--elab-border-strong);
+  border-radius: var(--elab-radius-sm);
+  background: var(--elab-bg-sunken);
+  color: var(--elab-fg-primary);
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-sm);
+}
+
+/* ── 提示条 ── */
+.notice {
+  position: absolute;
+  left: 50%;
+  bottom: var(--elab-space-4);
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  max-width: min(46rem, 90vw);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-border-strong);
+  border-left: 3px solid var(--elab-status-fail);
+  border-radius: var(--elab-radius);
+  background: var(--elab-glass);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: var(--elab-shadow-lg);
+  animation: noticeIn 0.22s var(--elab-ease);
+}
+@keyframes noticeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+}
+
+.noticeIcon {
+  flex: 0 0 auto;
+  width: 14px;
+  color: var(--elab-status-fail);
+}
+
+.noticeText {
+  flex: 1 1 auto;
+  font-size: var(--elab-fs-sm);
+  color: var(--elab-fg-primary);
+  word-break: break-word;
+}
+
+.noticeClose {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--elab-fg-faint);
+  font-size: var(--elab-fs-lg);
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.noticeClose:hover {
+  color: var(--elab-fg-primary);
+}
+
+/* ── 致命错误页 ── */
+.fatal {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 14vh var(--elab-space-5) var(--elab-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-3);
+}
+
+.fatalIcon {
+  width: 28px;
+  height: 28px;
+  color: var(--elab-status-fail);
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--elab-status-fail) 40%, transparent));
+}
+
+.fatalTitle {
+  margin: 0;
+  font-size: var(--elab-fs-xl);
+  color: var(--elab-fg-primary);
+}
+
+.fatalMsg {
+  margin: 0;
+  padding: var(--elab-space-3);
+  border-radius: var(--elab-radius);
+  border: 1px solid color-mix(in srgb, var(--elab-status-fail) 35%, transparent);
+  border-left: 3px solid var(--elab-status-fail);
+  background: color-mix(in srgb, var(--elab-status-fail) 8%, transparent);
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-sm);
+  color: var(--elab-status-fail);
+  word-break: break-word;
+  line-height: 1.7;
+}
+
+.fatalCmd {
+  margin: 0;
+  padding: var(--elab-space-3);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-code);
+  border: 1px solid var(--elab-border);
+  font-size: var(--elab-fs-sm);
+  color: var(--elab-fg-secondary);
+  overflow: auto;
+}
+
+.fatalHint {
+  margin: 0;
+  font-size: var(--elab-fs-sm);
+  color: var(--elab-fg-muted);
+  line-height: 1.7;
+}
+
+code {
+  font-family: var(--elab-font-mono);
+  font-size: 0.94em;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--elab-bg-hover);
+}

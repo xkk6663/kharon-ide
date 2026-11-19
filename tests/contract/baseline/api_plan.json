@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "source": "GET /api/plan?project=f411_breath",
+    "project": "f411_breath"
+  },
+  "shape": {
+    "clean": "<bool>",
+    "jobs": null,
+    "plan": [
+      {
+        "blocked": "<bool>",
+        "commands": [
+          [
+            "<str>"
+          ]
+        ],
+        "effects": [],
+        "note": "<str>",
+        "provider": "<str>",
+        "spawns": "<bool>",
+        "step": "<str>",
+        "work_dir": "<str>"
+      }
+    ],
+    "project": "<str>",
+    "provider": {
+      "name": "<str>",
+      "path": "<str>",
+      "source": "<str>",
+      "version": "<str>"
+    },
+    "steps": [
+      "<str>"
+    ],
+    "warnings": []
+  }
+}

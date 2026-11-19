@@ -1,0 +1,32 @@
+# ci/matrix.yaml —— Kharon/Zephyr CI 矩阵（L5）
+#
+# 本地 `kharon ci` 与 GitHub Actions 共用同一份定义。
+# 一档 job = 一组「工程 × 检查步骤」：
+#   host-gate  纯主机可跑（体检 + 编译）→ 云端 runner 需预装 Zephyr SDK
+#   onhw-gate  需要真实探针      → 必须 self-hosted，且可选
+
+version: 1
+
+defaults:
+  build_type: Debug
+  jobs: 4
+
+jobs:
+  # ── 档 1：主机门禁（无探针依赖）────────────────────────────────
+  - name: host-gate
+    desc: Kharon 环境体检 + Zephyr 编译（f411 基线）
+    projects: [f411_breath]
+    steps:
+      - doctor_deep       # 真跑 configure，校验 provider 与 host profile
+      - build             # west build + 产物自报
+    runner: ubuntu-latest
+
+  # ── 档 2：上板门禁（需要探针，self-hosted）─────────────────────
+  - name: onhw-gate
+    desc: DAP-Link 烧录 + 断到 main 自检
+    projects: [f411_breath]
+    steps:
+      - flash
+      - debug_verify
+    optional: true
+    runner: [self-hosted, dap]

@@ -1,0 +1,78 @@
+# packs/official/zephyr/framework/pack.yaml
+#
+# Zephyr 适配包（board-as-chip）。
+#
+# ★ 红线（方案 §3.3）：这个包**只装 elab 独有的知识**——
+#     board 名映射（`target`）、调试配置（gdb 键 / openocd cfg）、串口波特率、坑位。
+#   **不装** memory / core / compiler_defines / 链接脚本：那些是 Zephyr 的 dts 与
+#   Kconfig 的事实。抄进来就会出现"体检说错、构建是对的"这种第二套真相。
+#
+# 未构建时芯片卡显示"待测量"；构建后从 zephyr.dts 的 memory@ 节点读数（那是
+# 读数，不是声明）。
+
+schema_version: 1
+name: zephyr/framework
+vendor: zephyr
+platform: framework
+version: 0.1.0
+license: Apache-2.0
+status: official
+description: Zephyr（RTOS）适配包：board target 映射 + 调试配置 + 日志 profile + 坑位
+
+requires:
+  kernel_api: ">=1 <2"
+  schema_version: 1
+
+# ── 工程指纹（adapt.probe_project 的识别依据）─────────────────────
+# Zephyr 工程的唯一可靠指纹是 CMakeLists.txt 里的 find_package(Zephyr)；
+# 板名从 boards/<board>_<soc>_<core>.overlay 的文件名反解（target 的三段
+# 用 `_` 拼起来就是 overlay 文件名 stem，零猜测）。
+vendor_fingerprints:
+  - vendor: zephyr
+    kind: zephyr
+    generator: zephyr-west
+    provider_hint: zephyr/west
+    cmake_include: find_package(Zephyr
+
+# ── 串口日志 profile（纯数据，内核零改动）──────────────────────────
+# Zephyr LOG 子系统输出形如：
+#   [00:00:21.324,000] <inf> portal_cred: credential remembered: "501A"
+#   [00:00:21.356,000] <wrn> portal_link: connect failed, status 1
+# 应用自己的裸行（如 `[  0.21] portal conn 501A`）必须允许解析失败——
+# 解析器是"尽力标注"，不是"裁定格式"。
+serial:
+  log_profiles:
+    - id: zephyr
+      label: Zephyr（LOG / FATAL / 线程回溯）
+      panic_lines:
+        - 'FATAL ERROR'
+        - 'ZEPHYR FATAL ERROR'
+        - '\*\*\* ASSERTION FAIL'
+        - 'Unhandled kernel exception'
+      reset_lines:
+        - '\*\*\* Booting Zephyr OS'
+        - '^\*\*\* Booting nRF Connect SDK'
+      reason_pattern: 'FATAL ERROR:\s*([^\r\n]+)'
+      # Zephyr 的 fatal 回溯是逐行 "0x00000000" 或 "addr2line" 可解的裸地址，
+      # 默认 8 位十六进制即可；不写 rom_prefixes —— 以 addr2line 结果为准，
+      # 解不出来才提示原因（写死前缀会把板上真实函数误判成 ROM）。
+      symbolize:
+        tool_key: addr2line_zephyr_arm
+        args: ['-pfiaC']
+
+# ── 平台坑位（来自上游 AGENTS.md 的三条真坑，给人和 agent 看）──────
+# 注意：内核的 YAML 解析器是自带的极简实现，**不支持 `>` / `|` 块标量**，
+# 所以这里一律写成单行字符串（换行用空格代替）。
+pitfalls:
+  - id: overlay-needs-reconfigure
+    text: '改 applications/<soc>/<app>/boards/*.overlay 后必须重新 configure（或 -p always）；增量 ninja 不会重跑 cmake，overlay 改动静默不生效。'
+  - id: overlay-source-conflict
+    text: 'boards/<board>_<soc>_<core>.overlay 与工程根 app.overlay 二选一：两者同时存在时只有 boards/ 下那份被采用，另一个静默忽略。'
+  - id: static-lib-drops-registration
+    text: '把带 SYS_INIT / 自注册对象的源文件编进 STATIC 库会被链接器裁掉；必须用 zephyr_library() 或直接进 app target。'
+  - id: local-boards-live-in-tree
+    text: '自研板（esp32s31_function_coreboard）的事实源是仓库 zephyr_modules/elab-boards（west module），不是 west/zephyr/boards 里的树内副本；换机器后由 kharon bootstrap 重新链接该 module，任何"拷回树内"的副本都视为漂移。'
+  - id: debug-needs-config-debug
+    text: '调试时 continue 后 openocd 刷 "Polling failed / Failed to read memory at 0xe000ed04"、gdb 报 signal-received 且 pc=0，但串口心跳照旧 = 不是固件崩，是 WFI/STOP 期间内核时钟被门控；prj.conf 加 CONFIG_DEBUG=y（置 DBGMCU_CR 的 SLEEP/STOP/STANDBY 冻结位）即可。实机 F411 2026-11-18 复现并确认。'
+  - id: flash-runner-is-not-debug-runner
+    text: 'runners.yaml 的 flash-runner 与 debug-runner 常常不同（F411 板：flash-runner=dfu-util，debug-runner=openocd）；面板把两者都显示出来，"为什么烧不进去"才有答案。'

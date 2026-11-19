@@ -1,0 +1,137 @@
+# providers/official/zephyr/west/provider.yaml
+#
+# 工具链 provider（声明式数据包，schema v1）：把 `west` 的规范步骤声明成命令模板。
+# 内核不认识 Zephyr：它只认"某一步的命令是什么、在哪个 cwd、带哪些环境变量"。
+#
+# 与 ESP-IDF provider 同构，但有三处 Zephyr 特有的事实：
+#   1. cwd 必须是 **west topdir**，不是 app 目录（app 在 workspace 之外）；
+#   2. 一律 `python -m west` —— venv 的 west.exe 内嵌创建时的绝对路径，目录一搬就
+#      静默失效（exit 1、零输出）；
+#   3. 目标板名来自芯片包的 `target`（${chip.target}），provider 不写死任何一块板。
+#
+# 注意：内核自带的 YAML 解析器是极简实现——**数组必须写在一行内**，
+# 不支持跨行 flow sequence，也不支持 `>`/`|` 块标量。
+#
+# 安装：elab provider install zephyr/west --from providers/official/zephyr/west
+
+schema_version: 1
+provider_api: 1
+name: zephyr/west
+version: 1.0.0
+license: Apache-2.0
+description: Zephyr / west（工作区 + SDK 由 host 层声明，provider 只声明命令）
+
+requires:
+  kernel_api: ">=1 <2"
+  host:
+    - { key: tools.west_python.path, check: file }
+    # ★ 工作区与内核是**或**的关系（2026-11-18，三形态计划 §3.4）：
+    #   独立应用 + 只有 ZEPHYR_BASE 也合法（官方明确宽容）。写成两条硬检查
+    #   会把降级路径提前判死 —— 面板上一片灰，而 CLI 其实能编。
+    - any_of: [ { key: tools.zephyr.workspace, check: dir }, { key: tools.zephyr.base, check: dir } ]
+    - { key: tools.zephyr.sdk, check: dir }
+  probe: false
+  serial: true
+
+toolchain:
+  name: Zephyr SDK + west
+  version: "1.0.1 / west 1.5.0"
+  docs: https://docs.zephyrproject.org/latest/develop/west/index.html
+  install:
+    windows:
+      - py -m venv .deps/venv
+      - .deps/venv/Scripts/python.exe -m pip install west
+      - 下载 zephyr 源码到 west/zephyr，然后 cd west && python -m west init -l zephyr
+      - cd west && python -m west update
+      - 安装 Zephyr SDK 1.0.1，并把路径写进 kharon.host.yaml 的 tools.zephyr.sdk
+    linux:
+      - python3 -m venv .deps/venv && .deps/venv/bin/pip install west
+      - cd west && python -m west init -l zephyr && python -m west update
+      - 安装 Zephyr SDK 到 ~/zephyr-sdk-1.0.1
+    macos:
+      - python3 -m venv .deps/venv && .deps/venv/bin/pip install west
+      - cd west && python -m west init -l zephyr && python -m west update
+      - 安装 Zephyr SDK 到 ~/zephyr-sdk-1.0.1
+  host_keys:
+    - tools.west_python.path
+    - tools.zephyr.workspace
+    - tools.zephyr.base
+    - tools.zephyr.sdk
+
+defaults:
+  # ★ cwd 由**应用形态**决定（三形态计划 §3.3）：仓库应用的 cwd 是 zephyr_base，
+  #   工作区/独立应用是 topdir（无工作区时回落工程根）。写死
+  #   `${host:tools.zephyr.workspace}` 等于只表达"独立应用"一种形态。
+  cwd: ${ws:cwd}
+  env:
+    ZEPHYR_BASE: "${host:tools.zephyr.base}"
+    ZEPHYR_SDK_INSTALL_DIR: "${host:tools.zephyr.sdk}"
+    CCACHE_DIR: "${host:tools.zephyr.ccache_dir}"
+    WEST_PYTHON: "${host:tools.west_python.path}"
+    # ★ 自研板 + 应用公共层都作为 **Zephyr module** 接入：
+    #   板子住在 `<repo>/zephyr_modules/elab-boards/`，公共 C 源住在
+    #   `<repo>/zephyr_modules/elab-app-common/`，不再往 `west/zephyr/` 拷副本。
+    #   `EXTRA_ZEPHYR_MODULES` 同时被 `west boards` 与 CMake 配置期读取，
+    #   两块 module 既不用进 west 清单、也不用新建 git 仓。
+    #   ★ 必须是**正斜杠**；多路径用 `;` 分隔（zephyr_module.py 按 `;` split）。
+    EXTRA_ZEPHYR_MODULES: "${elab_root}/zephyr_modules/elab-boards;${elab_root}/zephyr_modules/elab-app-common"
+  env_prepend_path:
+    - "${host:tools.zephyr.cmake_bin_dir}"
+    - "${host:tools.zephyr.ninja_bin_dir}"
+    - "${host:tools.zephyr.ccache_bin_dir}"
+    - "${host:tools.zephyr.gnu_bin_dir}"
+    # ★ west venv 的 Scripts：esptool（esp 系 configure 期硬性要求 esptool>=5 在 PATH，
+    #   soc/espressif/common/CMakeLists.txt）与 west flash 的 runner 实现都住在这里。
+    - "${host:tools.zephyr.venv_scripts}"
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+steps:
+  # 探活：命令必须**有输出**才算通过（west.exe 失效时是 exit 1 + 零输出）
+  doctor:
+    cmd: ["${env:WEST_PYTHON}", "-m", "west", "--version"]
+    timeout_s: 120
+  # 一条命令完成 configure + build。
+  # ★ 位置参数用 ${ws:app_arg} 而不是 ${root}：三形态的**唯一差异**就在这里 ——
+  #     仓库应用   = samples/hello_world（相对 zephyr_base）
+  #     工作区应用 = applications/app（相对 topdir）
+  #     独立应用   = 工程绝对路径
+  #   独立应用时 ${ws:app_arg} 与 ${root} **逐字相同**，所以现有工程 argv 零变化。
+  # ★ 并行度必须走 `--build-opt`，不能跟在 `--` 后面：west 把 `--` 之后的参数
+  #   当作 **cmake** 参数（cmake: Unknown argument -j），实测踩到。
+  #   本机 16 核实测 -j16/-j18 会把提交内存打光（cc1.exe: out of memory），固定 -j8。
+  # ★ when_no_workspace：没有 west 工作区但有 ZEPHYR_BASE 时降级 cmake 直编
+  #   （计划 §3.4 / D2）。降级后"配置 + 构建"拆两条命令，由内核 post_cmd 承载。
+  build:
+    when_no_workspace: native-cmake
+    # ★ ${ws:sysbuild_flag}：工程根有 sysbuild.conf 时内核给出 `--sysbuild`
+    #   （MCUboot 双镜像），否则该 argv 元素整体消失（run.py 裸模板空展开丢弃）。
+    #   不用 west config build.sysbuild：那是工作区全局，会把普通工程一起劫持。
+    cmd: ["${env:WEST_PYTHON}", "-m", "west", "build", "-b", "${chip.target}", "${ws:sysbuild_flag}", "${ws:app_arg}", "-d", "${work_dir}", "-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache", "-DCMAKE_ASM_COMPILER_LAUNCHER=ccache", "--build-opt=-j${host:tools.zephyr.jobs}"]
+    timeout_s: 1800
+  # 用量报告：ram_report + rom_report。产物是 <work_dir>/ram.json 与 rom.json
+  # （符号级，不是段级——构建面板的旭日图读的就是这两个）。
+  # ★ 直接调 ninja，不走 `west build -t`：后者只认**一个** target
+  #   （`-t` 没有 action=append，写两次只有最后一个生效），实测只出 rom.json。
+  # ★ 不并进 build：DWARF 符号解析几十秒起步，每次编译都做会白等。
+  report:
+    cmd: ["${host:tools.ninja.path}", "-C", "${work_dir}", "ram_report", "rom_report"]
+    timeout_s: 900
+
+  # ★ 烧录 / 调试校验 **显式交回内核**（`native: true`，2026-11-18）。
+  #   为什么不是 `west flash` 一条命令了事：内核的 flash 已按 `flash.runner`
+  #   分流——openocd 走"整份 cfg + program/verify/reset"（能拿到逐行证据），
+  #   esp / dfu-util / jlink 走 `west flash`（擦除粒度与时序归 runner）。
+  #   两条路都在 flash.py 一处构造命令，Zephyr 不需要第二套烧录实现。
+  #   ★ 这也**不是**"缺步骤回退"：缺步骤仍然是 unavailable 报错（D3），
+  #     交回内核必须在 provider.yaml 里写出来，可审计。
+  flash: { native: true }
+  debug_verify: { native: true }
+
+debug:
+  backend: gdb-mi
+  features: [session, control, stack, variables, registers, breakpoints, memory, disasm, watch, rtos]

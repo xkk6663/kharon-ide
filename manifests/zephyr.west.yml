@@ -1,0 +1,94 @@
+# manifests/zephyr.west.yml —— Zephyr 工作区**允许清单**（P1，2026-11-19）
+#
+# 事实来源：本机 `west list --format "{name}|{path}|{revision}"`（2026-11-19 实测）。
+# 用途：
+#   1. `kharon bootstrap --check` 用它判断"缺哪些 module"（离线可查）；
+#   2. 依赖缓存 / 工作区分发只允许出现这里列出的项目；
+#   3. 国内镜像只允许覆写 remote URL，**不允许改 revision**。
+#
+# 更新方式（升级 Zephyr 时）：先 `west update` 到目标 commit，再重新导出本文件，
+# 与 `kharon deps` 的校验结果一起提交，保证 clone 后可复现同一棵工作区。
+version: 1
+zephyr:
+  # west manifest 仓库（zephyr 本体）
+  name: zephyr
+  remote: https://github.com/zephyrproject-rtos/zephyr
+  path: zephyr
+  commit: 34e025569cbb27660b71db809627c3a7402e2111
+  # 板级 module 的真相（不在 zephyr 树内另存副本）
+  boards_module: zephyr_modules/elab-boards
+
+projects:
+  - {name: acpica, path: modules/lib/acpica, revision: 8d24867bc9c9d81c81eeac59391cda59333affd4}
+  - {name: cmsis, path: modules/hal/cmsis, revision: 512cc7e895e8491696b61f7ba8066b4a182569b8}
+  - {name: cmsis-dsp, path: modules/lib/cmsis-dsp, revision: 45d23287f5b41be49612281a5e7c802c6a415388}
+  - {name: cmsis-nn, path: modules/lib/cmsis-nn, revision: 73591f72850bfebe95c6f30f6e75a773abb711cd}
+  - {name: cmsis_6, path: modules/hal/cmsis_6, revision: 1c1840af7a7e757d6e2fec3ddb0e5ce0dfcc93c8}
+  - {name: dhara, path: modules/lib/dhara, revision: 6f163ca05e174b168b4d148160b50eeaeeb561fc}
+  - {name: edtt, path: tools/edtt, revision: c282625e694f0b53ea53e13231ea6d2f49411768}
+  - {name: fatfs, path: modules/fs/fatfs, revision: 4f60a12c58c3de4246857ad87c40239ecd93349b}
+  - {name: hal_adi, path: modules/hal/adi, revision: 489885cdfa668870f95b00ded1cc56ac52cdf5c4}
+  - {name: hal_afbr, path: modules/hal/afbr, revision: effa58cab4a5e5f38d03357c73a65600d7414a67}
+  - {name: hal_ambiq, path: modules/hal/ambiq, revision: 61b293a49db34030c545f99101f7ebf6a3050314}
+  - {name: hal_atmel, path: modules/hal/atmel, revision: 8f95c79f2a80427ef446563cc9addefa959e92a9}
+  - {name: hal_bouffalolab, path: modules/hal/bouffalolab, revision: 18c998da7dcf550303bc9b2852602dcb401e21a1}
+  # hal_espressif 是 fork 分支（PR 657）。原 pull/657/head 会随 PR 更新漂移，
+  # clone 后拿到的 HAL 可能与验证时不同；这里钉到不可变 commit。
+  - {name: hal_espressif, path: modules/hal/espressif, revision: d89f455da929bdda8cfe0960fceeb36c704ce1b8}
+  - {name: hal_ethos_u, path: modules/hal/ethos_u, revision: 5f0b9d1e17b245aefc308ee0d5a4543833b96b11}
+  - {name: hal_gigadevice, path: modules/hal/gigadevice, revision: 804f92bf5794e403fab89178dcc6d775b9269c0d}
+  - {name: hal_infineon, path: modules/hal/infineon, revision: eae914ed1ad0b54af28191d13da9b8e98fb5cb2b}
+  - {name: hal_intel, path: modules/hal/intel, revision: 884c7a79a48efef50bc0d12c86f5d0951748f24d}
+  - {name: hal_microchip, path: modules/hal/microchip, revision: ec9372007f3c15f5994e0c3e6551c86584973a7c}
+  - {name: hal_nordic, path: modules/hal/nordic, revision: 75d7594f4bfb00cdec5c5501387cbb4c5b9fed0a}
+  - {name: hal_nuvoton, path: modules/hal/nuvoton, revision: 0f411a85da7d17a612d54450f608f4d30cdb971f}
+  - {name: hal_nxp, path: modules/hal/nxp, revision: 94438e50a4d831cf3dc081898e4a66724b81cb17}
+  - {name: hal_openisa, path: modules/hal/openisa, revision: eabd530a64d71de91d907bad257cd61aacf607bc}
+  - {name: hal_quicklogic, path: modules/hal/quicklogic, revision: bad894440fe72c814864798c8e3a76d13edffb6c}
+  - {name: hal_realtek, path: modules/hal/realtek, revision: 29d365ccfbceb9f42ce666d75463fbe2c83b8e29}
+  - {name: hal_renesas, path: modules/hal/renesas, revision: 0c0beea010e78899c8ffbfd995cbfe50d3e6595e}
+  - {name: hal_rpi_pico, path: modules/hal/rpi_pico, revision: 2e9dbf14fa56e5907aefb07e8e75010ec5210946}
+  - {name: hal_sifli, path: modules/hal/sifli, revision: 86fa0e9433fda1a760e0077c19b8407ecceea2f9}
+  - {name: hal_silabs, path: modules/hal/silabs, revision: 3402d10d7bbe0f323e018a4142b7ab7d45f9308b}
+  - {name: hal_st, path: modules/hal/st, revision: ce795a9b0de623022c17d2ff394587c024aec850}
+  - {name: hal_stm32, path: modules/hal/stm32, revision: 2fd0502dd5e02aa3e95a2f01278fdf27e42d7229}
+  - {name: hal_tdk, path: modules/hal/tdk, revision: 4e53fe1a1ea634dd8a13ecda1151a73bc598622f}
+  - {name: hal_telink, path: modules/hal/telink, revision: 4226c7fc17d5a34e557d026d428fc766191a0800}
+  - {name: hal_ti, path: modules/hal/ti, revision: 53c80140dd69905cc5e034f637eff9c66b2f9654}
+  - {name: hal_wch, path: modules/hal/wch, revision: fbfabfc590e86b74af873bd26d3b4433a0ffb9e9}
+  - {name: hal_wurthelektronik, path: modules/hal/wurthelektronik, revision: 7c1297ea071d03289112eb24e789c89c7095c0a2}
+  - {name: hal_xtensa, path: modules/hal/xtensa, revision: 60224c27bed1466287f0246ac04c902b92331c29}
+  - {name: hostap, path: modules/lib/hostap, revision: 1ce844ea5a9d8860d8690a125925fcc7274461df}
+  - {name: liblc3, path: modules/lib/liblc3, revision: 48bbd3eacd36e99a57317a0a4867002e0b09e183}
+  - {name: libmctp, path: modules/lib/libmctp, revision: b6be45dfc5c67c43c3a5e12589ae3845ea00ab5e}
+  - {name: libmetal, path: modules/hal/libmetal, revision: 77237e9748212796a8f93a33689ce935fb9c81c2}
+  - {name: libsbc, path: modules/lib/libsbc, revision: 8e1beda02acb8972e29e6edbb423f7cafe16e445}
+  - {name: littlefs, path: modules/fs/littlefs, revision: e9a8638fc228e43a3156ed3ac602229af3e3c1d5}
+  - {name: lora-basics-modem, path: modules/lib/lora-basics-modem, revision: a8ddc544043e72807cf7db532478e1dda734ae7c}
+  - {name: loramac-node, path: modules/lib/loramac-node, revision: 874544f2a8a0212a0cc12e5eea51a024fd3d93d1}
+  - {name: lvgl, path: modules/lib/gui/lvgl, revision: c9ffd4692de246eb911c7ba49b78a331b2c63c74}
+  - {name: mbedtls, path: modules/crypto/mbedtls, revision: c43f34b93797e81fd0257c30004dcd0ae332ae51}
+  - {name: mcuboot, path: bootloader/mcuboot, revision: 725d63c9d5bc1bb572d802e7a768daf504186daf}
+  - {name: mipi-sys-t, path: modules/debug/mipi-sys-t, revision: 5a9d6055b62edc54566d6d0034d9daec91749b98}
+  - {name: mldsa-native, path: modules/crypto/mldsa-native, revision: 3fc19982839305d305071f0de0c540bc9c9bea8a}
+  - {name: nanopb, path: modules/lib/nanopb, revision: 0f6d088e777a33dd7b54297f137ef10d745c5da8}
+  - {name: net-tools, path: tools/net-tools, revision: dbb08b8233d74219fcea896850e73b30a0961aa6}
+  - {name: nrf_hw_models, path: modules/bsim_hw_models/nrf_hw_models, revision: 50187f3879ffaafc171d364490bead27557f5192}
+  - {name: nrf_wifi, path: modules/lib/nrf_wifi, revision: 45cb18fd563d7212d2a828da94d1a16455ec80e5}
+  - {name: open-amp, path: modules/lib/open-amp, revision: 01032a8a7bdfdd541686f5dfa3671e602b9fcbff}
+  - {name: openthread, path: modules/lib/openthread, revision: 4a8d33459567cc611bf9d4d810c2201a24a64d84}
+  - {name: percepio, path: modules/debug/percepio, revision: f5f2f01f2830cf7082ac3264887aaaade213d568}
+  - {name: picolibc, path: modules/lib/picolibc, revision: 01254932e8e81085817ed61fd858648584ffe37c}
+  # 下面两项属于 Zephyr 官方 group-filter 的 testing 组，`west update --narrow` 默认不装；
+  # 本仓闭环不用它们，标记 optional 后 bootstrap 不把它们算作缺失。
+  - {name: psa-arch-tests, path: modules/tee/tf-m/psa-arch-tests, revision: 3ce2420dd321c86928b40d33a8f799f5138469d3, optional: true}
+  - {name: reqmgmt, path: doc/reqmgmt, revision: c6803e9b4e9bf9ae7fad3c7cd85dbf35d0d09ede}
+  - {name: segger, path: modules/debug/segger, revision: 50892fdbcf2f570e67baa72b8894a66b16946f72}
+  - {name: tf-m-tests, path: modules/tee/tf-m/tf-m-tests, revision: 420c95daa7a25143bb88f807a1e2c432dd4372e8, optional: true}
+  - {name: tf-psa-crypto, path: modules/crypto/tf-psa-crypto, revision: 765af96a20a2b408474dcd950372ba9af4d26b62}
+  - {name: tf-psa-crypto-drivers, path: modules/crypto/tf-psa-crypto-drivers, revision: edb74a92e602cd21a218836aff41a0600229978c}
+  - {name: trusted-firmware-a, path: modules/tee/tf-a/trusted-firmware-a, revision: 4d431cbbb451d13359534c63bf67e2d315ca37de}
+  - {name: trusted-firmware-m, path: modules/tee/tf-m/trusted-firmware-m, revision: 83c504a35d9a599e4bd71942dd2c0c8193901608}
+  - {name: uoscore-uedhoc, path: modules/lib/uoscore-uedhoc, revision: dc0ab6345450668de3f9597320a48c5a2d409bb6}
+  - {name: zcbor, path: modules/lib/zcbor, revision: 9164bd18dcd88ff9d9ef98279501fc1093571017}
+  - {name: zephyr-xenlib, path: modules/lib/zephyr-xenlib, revision: 8b13d0b709314b7de6cb5877c286d52e71095cc8}

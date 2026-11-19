@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="980" height="480" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="980" height="480" fill="#fbfcfe"/>
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">Zephyr 驱动的五段链：硬件描述 → binding → 实例 → API → 应用</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">应用只碰最右端；左边四段任何一段没接上，症状都是“设备 not ready”或读回 0</text>
+
+  <rect x="24" y="86" width="168" height="150" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="40" y="110" font-size="12" font-weight="600" fill="#1d4ed8">① dts / overlay</text>
+  <text x="40" y="134" font-size="10" fill="#475569">&amp;i2c1 {</text>
+  <text x="40" y="152" font-size="10" fill="#475569">　sensor: sensor@48 {</text>
+  <text x="40" y="170" font-size="10" fill="#047857">　　compatible = "acme,xyz";</text>
+  <text x="40" y="188" font-size="10" fill="#475569">　　reg = &lt;0x48&gt;;</text>
+  <text x="40" y="206" font-size="10" fill="#475569">　};</text>
+  <text x="40" y="224" font-size="9" fill="#94a3b8">硬件事实：地址、总线、引脚</text>
+
+  <path d="M192 160 L216 160" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="216" y="86" width="168" height="150" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="232" y="110" font-size="12" font-weight="600" fill="#1d4ed8">② binding yaml</text>
+  <text x="232" y="134" font-size="10" fill="#475569">compatible: "acme,xyz"</text>
+  <text x="232" y="152" font-size="10" fill="#475569">properties:</text>
+  <text x="232" y="170" font-size="10" fill="#475569">　reg: …</text>
+  <text x="232" y="188" font-size="10" fill="#475569">　sample-rate: …</text>
+  <text x="232" y="212" font-size="9" fill="#94a3b8">约束“节点里允许写什么”</text>
+
+  <path d="M384 160 L408 160" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="408" y="86" width="188" height="150" rx="9" fill="#ecfdf5" stroke="#059669"/>
+  <text x="424" y="110" font-size="12" font-weight="600" fill="#047857">③ 驱动实例</text>
+  <text x="424" y="134" font-size="10" fill="#475569">DEVICE_DT_INST_DEFINE(…)</text>
+  <text x="424" y="152" font-size="10" fill="#475569">api = &amp;xyz_api;</text>
+  <text x="424" y="170" font-size="10" fill="#475569">init() → device_is_ready</text>
+  <text x="424" y="188" font-size="10" fill="#475569">data / config 两份结构</text>
+  <text x="424" y="212" font-size="9" fill="#94a3b8">编译期生成，不是运行时 new</text>
+
+  <path d="M596 160 L620 160" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="620" y="86" width="152" height="150" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="636" y="110" font-size="12" font-weight="600" fill="#1d4ed8">④ 统一 API</text>
+  <text x="636" y="134" font-size="10" fill="#475569">sensor_sample_fetch()</text>
+  <text x="636" y="152" font-size="10" fill="#475569">sensor_channel_get()</text>
+  <text x="636" y="170" font-size="10" fill="#475569">i2c_write/read()</text>
+  <text x="636" y="192" font-size="9" fill="#94a3b8">不同芯片同一个函数名</text>
+
+  <path d="M772 160 L796 160" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="796" y="86" width="160" height="150" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="812" y="110" font-size="12" font-weight="600" fill="#1d4ed8">⑤ 应用</text>
+  <text x="812" y="134" font-size="10" fill="#475569">const struct device *dev =</text>
+  <text x="812" y="152" font-size="10" fill="#475569">　DEVICE_DT_GET(</text>
+  <text x="812" y="170" font-size="10" fill="#475569">　　DT_NODELABEL(xyz));</text>
+  <text x="812" y="190" font-size="10" fill="#047857">if (!device_is_ready(dev)) …</text>
+  <text x="812" y="208" font-size="9" fill="#94a3b8">业务代码不碰寄存器/总线</text>
+
+  <rect x="24" y="262" width="932" height="70" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="40" y="286" font-size="11" font-weight="600" fill="#0f172a">三处最容易断的点</text>
+  <text x="40" y="306" font-size="10.5" fill="#475569">1. <tspan font-weight="600">compatible 对不上</tspan> → 节点没有 binding，驱动不会被实例化；2. <tspan font-weight="600">status = "disabled"</tspan> → 设备存在但 ready 为假</text>
+  <text x="40" y="324" font-size="10.5" fill="#475569">3. <tspan font-weight="600">Kconfig 没开</tspan> → 驱动源码根本没进编译；先看 <tspan font-family="Consolas, monospace">zephyr/.config</tspan> 里 CONFIG_ 是否存在，再看 dts</text>
+
+  <rect x="24" y="348" width="300" height="100" rx="9" fill="#ffffff" stroke="#059669"/>
+  <text x="40" y="372" font-size="11.5" font-weight="600" fill="#047857">换板时改哪</text>
+  <text x="40" y="394" font-size="10" fill="#475569">只改 dts/overlay（总线、地址、引脚）</text>
+  <text x="40" y="412" font-size="10" fill="#475569">和 prj.conf（开关）；应用代码不动</text>
+  <text x="40" y="434" font-size="9.5" fill="#94a3b8">这就是“同一份代码换芯片”的边界</text>
+
+  <rect x="340" y="348" width="300" height="100" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="356" y="372" font-size="11.5" font-weight="600" fill="#0f172a">换厂商时还要改哪</text>
+  <text x="356" y="394" font-size="10" fill="#475569">SoC dtsi、pinctrl 头文件、board 目录</text>
+  <text x="356" y="412" font-size="10" fill="#475569">以及烧录探针（openocd / DAP-Link）</text>
+  <text x="356" y="434" font-size="9.5" fill="#94a3b8">应用层 API 仍然不变</text>
+
+  <rect x="656" y="348" width="300" height="100" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="672" y="372" font-size="11.5" font-weight="600" fill="#0f172a">验收顺序</text>
+  <text x="672" y="394" font-size="10" fill="#475569">编译过 → device_is_ready → 读一次 →</text>
+  <text x="672" y="412" font-size="10" fill="#475569">连续读 / 异常注入 → 串口证据</text>
+  <text x="672" y="434" font-size="9.5" fill="#94a3b8">别用“编译过”代替“设备活”</text>
+
+  <text x="24" y="472" font-size="9.5" fill="#94a3b8">口径：Zephyr 4.5.99 · devicetree + Kconfig 双事实 · 详见教程 11 与参考/工程结构与可迁移性</text>
+</svg>

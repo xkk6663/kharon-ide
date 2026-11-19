@@ -1,0 +1,27 @@
+/*
+ * korvo_sys 的 Korvo-1（ESP32-S31）板级 overlay（系统层实验台）
+ *
+ * 文件名 = 板目标下划线化：esp32s31_function_coreboard/esp32s31/hpcore
+ *          -> esp32s31_function_coreboard_esp32s31_hpcore.overlay
+ *
+ * 本工程只要片上外设，不需要 Korvo-1 的公共板级片段（PA/I2C/WS2812），
+ * 所以没有 #include ../../../common/...。
+ */
+
+/ {
+	chosen {
+		zephyr,entropy = &trng0;
+	};
+};
+
+/* 片上温度传感器默认 disabled，这里打开 */
+&coretemp {
+	status = "okay";
+};
+
+/* 看门狗 wdt0 在这棵树里默认 disabled，所以 WDT_ESP32 驱动不会被选中
+ * （Kconfig: depends on DT_HAS_ESPRESSIF_ESP32_WATCHDOG_ENABLED）。
+ * 打开节点后驱动自动编译；本工程只读 device_is_ready，不安装超时。 */
+&wdt0 {
+	status = "okay";
+};

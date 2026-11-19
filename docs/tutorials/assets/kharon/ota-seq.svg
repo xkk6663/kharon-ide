@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 470" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="13">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6472"/>
+    </marker>
+  </defs>
+
+  <style>
+    .t-dark { fill: #232a33; }
+    .t-mut  { fill: #5a6472; }
+    .t-acc  { fill: #1f6f43; }
+    .lane   { fill: #f6f8fa; stroke: #e3e8ee; }
+    .hl     { fill: #f2fbf6; stroke: #1f6f43; stroke-width: 1.4; }
+    .line   { stroke: #5a6472; stroke-width: 1.2; fill: none; }
+    .mono   { font-family: Consolas, 'Courier New', monospace; }
+    .phase  { fill: #eef2f7; stroke: #d7dde5; rx: 6; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="470" fill="#ffffff"/>
+
+  <text x="24" y="34" class="t-dark" font-size="17" font-weight="700">一次 OTA 上传的时间线（协议 v2，端口 8080）</text>
+  <text x="24" y="56" class="t-mut">为什么不上 80：配网页的 http_server 交 body 时走自己的缓冲，几百 KB 固件不适合挤在里面</text>
+
+  <!-- 两侧角色 -->
+  <rect x="24" y="76" width="180" height="44" class="lane" rx="8"/>
+  <text x="114" y="95" text-anchor="middle" class="t-dark" font-weight="700">推送端</text>
+  <text x="114" y="112" text-anchor="middle" class="mono t-mut">ota_push.py / 网页</text>
+
+  <rect x="476" y="76" width="180" height="44" class="lane" rx="8"/>
+  <text x="566" y="95" text-anchor="middle" class="t-dark" font-weight="700">设备（s3_wifi_portal）</text>
+  <text x="566" y="112" text-anchor="middle" class="mono t-mut">ota_engine + slot 后端</text>
+
+  <line x1="114" y1="120" x2="114" y2="440" class="line"/>
+  <line x1="566" y1="120" x2="566" y2="440" class="line"/>
+
+  <!-- 步骤 -->
+  <line x1="114" y1="146" x2="566" y2="146" class="line" marker-end="url(#arr)"/>
+  <text x="340" y="140" text-anchor="middle" class="t-dark">① POST 首包：<tspan class="mono">X-Sha256</tspan>（整包摘要）+ <tspan class="mono">X-Auth</tspan> = HMAC(PSK, ver|size|sha|nonce|force)</text>
+
+  <line x1="566" y1="180" x2="114" y2="180" class="line" marker-end="url(#arr)"/>
+  <text x="340" y="174" text-anchor="middle" class="t-mut">② 校验失败当场回 401/400（noauth / badauth / missing sha / 版本不升）</text>
+
+  <line x1="114" y1="214" x2="566" y2="214" class="line" marker-end="url(#arr)"/>
+  <text x="340" y="208" text-anchor="middle" class="t-dark">③ 分块上行（2 KB/块）：板子边收边擦边写 slot1（首写要擦 336 个扇区，约 10 s）</text>
+
+  <line x1="566" y1="248" x2="114" y2="248" class="line" marker-end="url(#arr)"/>
+  <text x="340" y="242" text-anchor="middle" class="t-mut">④ 断了可续传：<tspan class="mono">X-Resume: 1</tspan> → 206 + 已确认偏移（256 KB 段界，NVS 账本 stale 校验）</text>
+
+  <line x1="114" y1="282" x2="566" y2="282" class="line" marker-end="url(#arr)"/>
+  <text x="340" y="276" text-anchor="middle" class="t-dark">⑤ 末包：设备回读 slot1 与累积 SHA-256 比对</text>
+
+  <rect x="180" y="306" width="320" height="52" class="hl" rx="8"/>
+  <text x="340" y="328" text-anchor="middle" class="t-acc" font-weight="700">MATCH → 标记候选 + 重启（swap 走 mcuboot）</text>
+  <text x="340" y="346" text-anchor="middle" class="mono t-mut">MISMATCH / 体积超限 → 拒绝，一字节都不落盘</text>
+
+  <line x1="566" y1="386" x2="114" y2="386" class="line" marker-end="url(#arr)"/>
+  <text x="340" y="380" text-anchor="middle" class="t-dark">⑥ 重启后 60s 自证：串口打点 <tspan class="mono">timing dl= verify= total=</tspan> + 应用自报健康 → 转正</text>
+
+  <text x="24" y="420" class="t-mut">证据链在哪看：串口打点（S0）→ <tspan class="mono">/api/ota/slots</tspan> 槽位台账（S2 完整性）→
+    nonce 账本（S3）→ mcuboot 启动日志（S5 切槽/回滚）</text>
+
+  <text x="24" y="448" class="t-mut">打点不是日志美化：dl/verify/total/throughput 四个数在切槽前打出来，事后对账全靠它们</text>
+</svg>

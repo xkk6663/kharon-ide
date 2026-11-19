@@ -1,0 +1,2 @@
+# 开发/CI 依赖（运行 `kharon` 本身只需 Python 标准库；west 由 bootstrap 装进 .deps/venv）
+pytest>=8,<10

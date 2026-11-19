@@ -1,0 +1,22 @@
+# zephyr_modules/elab-boards/zephyr/module.yml
+#
+# 自研板的**唯一真相**（2026-11-18，三形态计划 §3.8 / P6）。
+#
+# 为什么把板子做成 Zephyr module 而不是往 `west/zephyr/boards/` 里拷：
+#   * 树内副本会被 `west update` 一冲就没，别人 clone 后永远复现不了；
+#   * module 可以**不进 west 清单**（`zephyr_module.py` 读 `EXTRA_ZEPHYR_MODULES`），
+#     所以不用新建仓、不用 push、不用改上游 west.yml —— 对 bootstrap 是净收益；
+#   * `west boards` 会把 module 的 `board_root` 并入扫描根（`boards.py` 读
+#     `module.meta['build']['settings']['board_root']`），所以自研板照样列得出来。
+#
+# 目录约定（两条都是硬要求，错了不会静默）：
+#   1. 每个 board root 下必须有 `boards/` 子目录，否则 cmake 报 WARNING；
+#   2. 板目录按 `board.yml` 的 `vendor` 分层：`boards/<vendor>/<board>/`。
+#
+# 引用的地方只有两处，改路径要同时改：
+#   * `providers/official/zephyr/west/provider.yaml` 的 `EXTRA_ZEPHYR_MODULES`
+#   * `kharon.host.yaml` 的 `tools.zephyr.boards_local`（只用于 `kharon deps` 校验）
+name: elab_boards
+build:
+  settings:
+    board_root: .

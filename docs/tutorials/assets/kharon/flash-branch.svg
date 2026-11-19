@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="980" height="440" fill="#fbfcfe"/>
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">同一个 flash 步骤，三种形态：判据来自芯片包，不来自代码里的厂商分支</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">老的两段 cfg 一行没改；新的整份 cfg 与「交给 runner」都是旁支，互不干扰</text>
+
+  <!-- 起点 -->
+  <rect x="24" y="76" width="150" height="64" rx="9" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="99" y="100" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">elab flash</text>
+  <text x="99" y="120" font-size="9.5" fill="#2563eb" text-anchor="middle">从 plan 读芯片包</text>
+
+  <!-- 判断1 -->
+  <rect x="200" y="76" width="196" height="64" rx="9" fill="#ffffff" stroke="#94a3b8"/>
+  <text x="298" y="98" font-size="11" font-weight="600" fill="#334155" text-anchor="middle">flash.runner 是什么？</text>
+  <text x="298" y="118" font-size="9.5" fill="#64748b" text-anchor="middle">缺省取 runners.yaml 的 flash-runner</text>
+
+  <path d="M174 108 L200 108" stroke="#64748b" stroke-width="1.5" marker-end="url(#a3)"/>
+
+  <!-- 分支 A：其他 runner -->
+  <path d="M298 140 L298 178" stroke="#64748b" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="196" y="178" width="204" height="76" rx="9" fill="#fffbeb" stroke="#d97706"/>
+  <text x="298" y="200" font-size="11" font-weight="600" fill="#b45309" text-anchor="middle">esp / dfu-util / jlink</text>
+  <text x="298" y="220" font-size="10" fill="#92400e" text-anchor="middle">west flash -d &lt;build&gt;</text>
+  <text x="298" y="236" font-size="10" fill="#92400e" text-anchor="middle">--runner &lt;runner&gt;</text>
+  <text x="298" y="250" font-size="8.5" fill="#b45309" text-anchor="middle">擦除时序归 runner</text>
+
+  <!-- 判断2：横向 -->
+  <path d="M396 108 L448 108" stroke="#64748b" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="448" y="76" width="212" height="64" rx="9" fill="#ffffff" stroke="#94a3b8"/>
+  <text x="554" y="98" font-size="11" font-weight="600" fill="#334155" text-anchor="middle">debug.openocd_config 有值？</text>
+  <text x="554" y="118" font-size="9.5" fill="#64748b" text-anchor="middle">芯片包里的整份 cfg 路径</text>
+
+  <!-- 分支 B：整份 cfg -->
+  <path d="M554 140 L554 178" stroke="#64748b" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="430" y="178" width="248" height="76" rx="9" fill="#ecfdf5" stroke="#059669"/>
+  <text x="554" y="200" font-size="11" font-weight="600" fill="#047857" text-anchor="middle">Zephyr 板级：整份 cfg</text>
+  <text x="554" y="220" font-size="10" fill="#065f46" text-anchor="middle">openocd -f dap_link_openocd.cfg</text>
+  <text x="554" y="236" font-size="10" fill="#065f46" text-anchor="middle">-c "program {elf} verify reset exit"</text>
+  <text x="554" y="250" font-size="9" fill="#047857" text-anchor="middle">interface+target+reset_config 混写</text>
+
+  <!-- 分支 C：两段 -->
+  <path d="M660 108 L712 108" stroke="#64748b" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="712" y="76" width="244" height="76" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="4 3"/>
+  <text x="834" y="98" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">classic：两段 cfg（逐字不变）</text>
+  <text x="834" y="118" font-size="10" fill="#64748b" text-anchor="middle">-f interface/dap.cfg</text>
+  <text x="834" y="134" font-size="10" fill="#64748b" text-anchor="middle">-f target/stm32f4x.cfg</text>
+
+  <!-- 下方：为什么要这么分 -->
+  <rect x="24" y="284" width="460" height="130" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="40" y="306" font-size="11.5" font-weight="600" fill="#334155">为什么整份 cfg 不能“追加”</text>
+  <text x="40" y="330" font-size="10.5" fill="#64748b">Zephyr 的板级 openocd 配置把 interface、target、reset_config 写在同一份文件里。</text>
+  <text x="40" y="350" font-size="10.5" fill="#64748b">如果内核再补一段 target/stm32f4x.cfg，openocd 会直接报：</text>
+  <text x="40" y="374" font-size="10.5" fill="#b91c1c" font-family="ui-monospace, Consolas, monospace">Error: target 'stm32f4x.cpu' already exists</text>
+  <text x="40" y="398" font-size="10" fill="#64748b">所以两条路互斥：有整份就只用整份，没有才走两段。</text>
+
+  <rect x="500" y="284" width="456" height="130" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="516" y="306" font-size="11.5" font-weight="600" fill="#334155">gdb 与 addr2line 用“键名”而不是路径</text>
+  <text x="516" y="330" font-size="10.5" fill="#64748b">芯片包写 gdb_key: gdb_zephyr_arm，host 里才有真路径。</text>
+  <text x="516" y="350" font-size="10.5" fill="#64748b">ARM / RISC-V / Xtensa 三套工具链因此不需要三套代码：</text>
+  <text x="516" y="374" font-size="10.5" fill="#1d4ed8" font-family="ui-monospace, Consolas, monospace">Host.tool(key, field="path")</text>
+  <text x="516" y="398" font-size="10" fill="#64748b">换工具链只改 host.yaml，芯片包不动。</text>
+
+  <!-- 时间标注 -->
+  <text x="24" y="430" font-size="9.5" fill="#94a3b8">三种形态共用 _openocd_argv / _flash_west 两个函数：没有第二份实现，也没有第二套真相。</text>
+</svg>

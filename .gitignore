@@ -1,0 +1,56 @@
+# kharon-ide 本地工作目录（构建产物 / 生成物），不入库
+.work/
+
+# 「⋯ → 移除工程」留下的恢复备份（只删接入文件，业务工程不动）
+projects/*.yaml.bak
+
+# 全部构建产物
+build/
+
+# 适配包安装目录（按需从官方源安装，不入库）；
+# 随仓只保留 packs/official/** 与 market/index.json（索引）
+packs/installed/
+
+# 工具链 provider 安装目录（按需从官方源安装，不入库）；
+# 随仓只保留 providers/official/** 与 market/index.json（索引）
+providers/installed/
+
+# Python 字节码
+__pycache__/
+*.pyc
+
+# 浏览器验证截图（临时产物，不入库）
+.screenshots/
+
+# WorkBuddy 会话数据（不入库）
+.workbuddy/
+
+# 前端第三方依赖（入库的只有源码与 lock）
+node_modules/
+
+# frame codegen 产物（由 profile 生成，POST /api/serial/frames/codegen write=true 可重建）
+generated/
+
+# 指向仓库外本机绝对路径的临时接入文件（换台机器即失效）
+projects/demo-fw.yaml
+projects/demo_fw.yaml
+projects/elab_stm32.yaml
+projects/kharon.local.yaml
+
+# 外部工具生成的分享包（HTML 快照 + 媒体副本，可随时重新生成）
+.trae-html-share-packages/
+
+# ── Kharon / Zephyr 本机依赖（不入库）────────────────────────────────
+# 上游工程原始目录 / 旧学习线工作区；现行教程已整理进 docs/zephyr-learn/，这里不入库
+/zephyr-learn/
+# west 工作区 = 上游 Zephyr 源码 + 模块（1.1G），由 `kharon bootstrap` 重建
+/west/
+# 每机器的依赖：venv / cmake / ninja / ccache（可重建）
+/.deps/
+# 每机器的 SDK 与工具链路径（bootstrap --write-local 写入）
+/kharon.local.yaml
+# 本机绝对路径覆盖：按 profile 分节，绝不入库（模板见 config/host.local.yaml.example）
+/host.local.yaml
+# 旧布局主机文件，仅兼容旧用法；一律视为本机文件
+/elab.host.yaml
+/kharon.host.yaml

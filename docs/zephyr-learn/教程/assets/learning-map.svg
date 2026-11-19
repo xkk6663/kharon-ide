@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <rect x="0" y="0" width="980" height="560" fill="#fbfcfe"/>
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">Zephyr 学习地图：从一条可复现的链，到五层能力</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">先按 00–04 跑通，再按 10–17 加深；每层都对应仓库里的可执行入口与实机证据</text>
+
+  <rect x="24" y="76" width="932" height="32" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="40" y="97" font-size="11" font-weight="600" fill="#0f172a">层</text>
+  <text x="150" y="97" font-size="11" font-weight="600" fill="#0f172a">学什么</text>
+  <text x="470" y="97" font-size="11" font-weight="600" fill="#0f172a">当前仓库入口</text>
+  <text x="730" y="97" font-size="11" font-weight="600" fill="#0f172a">怎么验收</text>
+
+  <rect x="24" y="114" width="932" height="62" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="40" y="138" font-size="11" font-weight="600" fill="#1d4ed8">环境层 00–04</text>
+  <text x="40" y="158" font-size="9.5" fill="#94a3b8">west / SDK / 工具链</text>
+  <text x="150" y="138" font-size="10.5" fill="#475569">west + Zephyr SDK + CMake/Ninja</text>
+  <text x="150" y="158" font-size="10.5" fill="#475569">一个版本、一个工作区、一套 PATH</text>
+  <text x="470" y="138" font-size="9.5" fill="#047857">kharon env --out scripts\kharon-env.ps1</text>
+  <text x="470" y="158" font-size="9.5" fill="#047857">west\ （ZEPHYR_BASE=west/zephyr）</text>
+  <text x="730" y="138" font-size="10" fill="#475569">west --version = v1.5.0</text>
+  <text x="730" y="158" font-size="10" fill="#475569">第一次构建产物落 build/</text>
+
+  <rect x="24" y="182" width="932" height="62" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="40" y="206" font-size="11" font-weight="600" fill="#1d4ed8">应用层 10–13</text>
+  <text x="40" y="226" font-size="9.5" fill="#94a3b8">main / thread / shell</text>
+  <text x="150" y="206" font-size="10.5" fill="#475569">main → 线程 → 队列/定时器 → 组件</text>
+  <text x="150" y="226" font-size="10.5" fill="#475569">shell、NVS、Modbus、OTA 都是应用</text>
+  <text x="470" y="206" font-size="9.5" fill="#047857">applications/stm32f4/f411_breath</text>
+  <text x="470" y="226" font-size="9.5" fill="#047857">applications/esp32s3/…（S3 学习线）</text>
+  <text x="730" y="206" font-size="10" fill="#475569">串口 1Hz [alive]</text>
+  <text x="730" y="226" font-size="10" fill="#475569">Kharon 六步 run 全绿</text>
+
+  <rect x="24" y="250" width="932" height="62" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="40" y="274" font-size="11" font-weight="600" fill="#1d4ed8">驱动层 11</text>
+  <text x="40" y="294" font-size="9.5" fill="#94a3b8">dts / binding / API</text>
+  <text x="150" y="274" font-size="10.5" fill="#475569">dts/overlay 描述硬件，binding 约束节点</text>
+  <text x="150" y="294" font-size="10.5" fill="#475569">device_is_ready → 统一 API，不碰寄存器</text>
+  <text x="470" y="274" font-size="9.5" fill="#047857">boards/ + *.overlay + prj.conf</text>
+  <text x="470" y="294" font-size="9.5" fill="#047857">applications/…/src 只调 API</text>
+  <text x="730" y="274" font-size="10" fill="#475569">设备 ready、读写成功</text>
+  <text x="730" y="294" font-size="10" fill="#475569">换板只改 dts/overlay</text>
+
+  <rect x="24" y="318" width="932" height="62" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="40" y="342" font-size="11" font-weight="600" fill="#1d4ed8">系统/连接 14·17</text>
+  <text x="40" y="362" font-size="9.5" fill="#94a3b8">kernel / net / OTA</text>
+  <text x="150" y="342" font-size="10.5" fill="#475569">线程/栈水位、NVS；Wi-Fi/MQTT/OTA</text>
+  <text x="150" y="362" font-size="10.5" fill="#475569">系统层看的是“运行时事实”，不是 API</text>
+  <text x="470" y="342" font-size="9.5" fill="#047857">Kharon 调试页签（Zephyr / RTOS 栈）</text>
+  <text x="470" y="362" font-size="9.5" fill="#047857">applications/esp32s3/s3_wifi_portal</text>
+  <text x="730" y="342" font-size="10" fill="#475569">断点停住、0xAA 水位可读</text>
+  <text x="730" y="362" font-size="10" fill="#475569">OTA 换槽 / 回滚有日志</text>
+
+  <rect x="24" y="386" width="932" height="62" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="40" y="410" font-size="11" font-weight="600" fill="#1d4ed8">跨芯片 15–16</text>
+  <text x="40" y="430" font-size="9.5" fill="#94a3b8">SoC / board / probe</text>
+  <text x="150" y="410" font-size="10.5" fill="#475569">SoC dtsi、board 15 文件、pinctrl、探针</text>
+  <text x="150" y="430" font-size="10.5" fill="#475569">同一份应用换板，不改业务代码</text>
+  <text x="470" y="410" font-size="9.5" fill="#047857">tutorials/10（F411）/ 15（F411↔F103）</text>
+  <text x="470" y="430" font-size="9.5" fill="#047857">west/build 产物按芯片分目录</text>
+  <text x="730" y="410" font-size="10" fill="#475569">west build -b 通过</text>
+  <text x="730" y="430" font-size="10" fill="#475569">烧录 + 串口心跳双确认</text>
+
+  <rect x="24" y="466" width="932" height="66" rx="8" fill="#ecfdf5" stroke="#059669"/>
+  <text x="40" y="490" font-size="11" font-weight="600" fill="#047857">两条轨，共用一套框架</text>
+  <text x="40" y="512" font-size="10.5" fill="#475569">学习线：ESP32-S3（00–17，历史实测）+ S31（附录 A）　｜　当前主线：STM32F411/F103（tutorials 10–14，Kharon）</text>
+  <text x="40" y="528" font-size="9.5" fill="#94a3b8">换板不换 API，但必须按板编译：SoC/board/pinctrl/probe 四件套决定“能不能跑”，应用代码只决定“跑什么”。</text>
+
+  <text x="24" y="552" font-size="9.5" fill="#94a3b8">资料口径：Zephyr 4.5.99 · west v1.5.0 · SDK 1.0.1 ｜ 细节入口：教程/README.md · 参考/README.md · tutorials/10–14</text>
+</svg>

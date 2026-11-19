@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 600" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="13">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6472"/>
+    </marker>
+  </defs>
+
+  <style>
+    .t-dark { fill: #232a33; }
+    .t-mut  { fill: #5a6472; }
+    .t-acc  { fill: #1f6f43; }
+    .t-warn { fill: #8a4b12; }
+    .lane   { fill: #f6f8fa; stroke: #e3e8ee; }
+    .hl     { fill: #f2fbf6; stroke: #1f6f43; stroke-width: 1.4; }
+    .line   { stroke: #5a6472; stroke-width: 1.2; fill: none; }
+    .dash   { stroke: #9aa4b2; stroke-width: 1.2; fill: none; stroke-dasharray: 6 4; }
+    .mono   { font-family: Consolas, 'Courier New', monospace; }
+  </style>
+
+  <rect x="0" y="0" width="820" height="600" fill="#ffffff"/>
+
+  <text x="24" y="34" class="t-dark" font-size="17" font-weight="700">公网 OTA：设备只出站，VPS 只搬运不裁决（TLS1.2 + 证书固定）</text>
+  <text x="24" y="56" class="t-mut">PSK 不上云：HMAC 由 PC 侧算好塞进 OFFER；设备端独立复核，云端改一个字节都过不了门禁</text>
+
+  <!-- 三个角色 -->
+  <rect x="24" y="76" width="200" height="44" class="lane" rx="8"/>
+  <text x="124" y="95" text-anchor="middle" class="t-dark" font-weight="700">PC 发布端</text>
+  <text x="124" y="112" text-anchor="middle" class="mono t-mut">tools/zephyr/ota_offer.py</text>
+
+  <rect x="310" y="76" width="200" height="44" class="lane" rx="8"/>
+  <text x="410" y="95" text-anchor="middle" class="t-dark" font-weight="700">VPS cloudhub</text>
+  <text x="410" y="112" text-anchor="middle" class="mono t-mut">120.76.230.17:8443</text>
+
+  <rect x="596" y="76" width="200" height="44" class="lane" rx="8"/>
+  <text x="696" y="95" text-anchor="middle" class="t-dark" font-weight="700">设备 s3_wifi_portal</text>
+  <text x="696" y="112" text-anchor="middle" class="mono t-mut">ota_cloud.c（只出站）</text>
+
+  <line x1="124" y1="120" x2="124" y2="520" class="line"/>
+  <line x1="410" y1="120" x2="410" y2="520" class="line"/>
+  <line x1="696" y1="120" x2="696" y2="520" class="line"/>
+
+  <!-- ① scp -->
+  <line x1="124" y1="150" x2="410" y2="150" class="line" marker-end="url(#arr2)"/>
+  <path d="M0,0 L-6,-4 L-6,4 z" fill="#5a6472" transform="translate(130,150)"/>
+  <text x="267" y="144" text-anchor="middle" class="t-dark">① scp 签名镜像 → <tspan class="mono">/opt/hub/fw/fw-&lt;ver&gt;.signed.bin</tspan></text>
+
+  <!-- ②③ nonce + offer -->
+  <line x1="124" y1="186" x2="410" y2="186" class="line" marker-end="url(#arr2)"/>
+  <text x="267" y="180" text-anchor="middle" class="t-dark">② <tspan class="mono">GET /v1/nonce/next?dev=</tspan> → VPS 单调计数器</text>
+
+  <line x1="124" y1="222" x2="410" y2="222" class="line" marker-end="url(#arr2)"/>
+  <text x="267" y="216" text-anchor="middle" class="t-dark">③ <tspan class="mono">POST /v1/ota/offer</tspan>（admin）+ <tspan class="mono">auth=HMAC(PSK,ver|size|sha|nonce|force)</tspan></text>
+
+  <!-- ④ check -->
+  <line x1="696" y1="264" x2="410" y2="264" class="line" marker-end="url(#arr2)"/>
+  <text x="553" y="258" text-anchor="middle" class="t-dark">④ <tspan class="mono">GET /v1/ota/check?dev=</tspan>（X-Dev-Token）→ 204 / 200 + OFFER</text>
+
+  <!-- ⑤ local gates -->
+  <rect x="536" y="282" width="272" height="82" class="hl" rx="8"/>
+  <text x="672" y="302" text-anchor="middle" class="t-acc" font-weight="700">⑤ 设备本地四道门禁（云端不参与裁决）</text>
+  <text x="672" y="320" text-anchor="middle" class="t-dark">HMAC 比对 · nonce 严格递增 · ver &gt; 本机 · size ≤ 槽容量</text>
+  <text x="672" y="338" text-anchor="middle" class="t-mut">force 无豁免（公网没有配网页那种弱口令档）</text>
+  <text x="672" y="356" text-anchor="middle" class="mono t-mut">重放旧 nonce 必死：VPS 计数器 + 设备 NVS 账本</text>
+
+  <!-- ⑥ download -->
+  <line x1="696" y1="392" x2="410" y2="392" class="line" marker-end="url(#arr2)"/>
+  <text x="553" y="386" text-anchor="middle" class="t-dark">⑥ <tspan class="mono">GET /fw/&lt;file&gt;?dev=</tspan>（续传带 <tspan class="mono">Range</tspan>）→ 200/206</text>
+
+  <!-- ⑦ backend -->
+  <text x="690" y="420" text-anchor="middle" class="t-mut">⑦ 流式写 slot1：SHA-256 累积 + 切槽前 flash 回读</text>
+
+  <!-- ⑧ report -->
+  <line x1="696" y1="448" x2="410" y2="448" class="line" marker-end="url(#arr2)"/>
+  <text x="553" y="442" text-anchor="middle" class="t-dark">⑧ <tspan class="mono">POST /v1/ota/report?dev=</tspan> → admin 在 status 里查</text>
+
+  <!-- ⑨ arm -->
+  <line x1="696" y1="484" x2="696" y2="484" class="dash"/>
+  <text x="690" y="480" text-anchor="middle" class="t-dark">⑨ <tspan class="mono">ota_arm_upgrade()</tspan>：PERMANENT 切槽 + nonce 提交 + 清断点</text>
+  <text x="690" y="502" text-anchor="middle" class="t-mut">重启后 60s 自证窗口：健康且链路正常才转正，否则 mcuboot 搬回旧槽</text>
+
+  <!-- 边界说明 -->
+  <text x="24" y="540" class="t-mut">TLS：设备内嵌自签 CA（<tspan class="mono">hub_ca.inc</tspan>），校验 CN/IP SAN —— 中间人换证书必失败；设备不监听任何公网端口。</text>
+  <text x="24" y="562" class="t-warn">双通道互斥：<tspan class="mono">ota_lan_idle()==false</tspan> 时公网通道拒绝开工（写槽上下文 / 摘要 / 断点都是全局的）。</text>
+  <text x="24" y="584" class="t-mut">发布端的 <tspan class="mono">hub_ca.pem</tspan> 缺失时直接失败（fail closed），不降级成"跳过校验"。</text>
+</svg>

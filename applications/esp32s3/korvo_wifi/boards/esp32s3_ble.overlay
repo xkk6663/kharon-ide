@@ -1,0 +1,38 @@
+/*
+ * S3 最小板：BLE 示例的 overlay
+ *
+ * 两件事：
+ *   1. 打开片上蓝牙控制器节点 esp32_bt_hci（dts 里默认 disabled，
+ *      chosen 已经指向它，所以只要 status 变 okay，HCI 驱动就会接上）；
+ *   2. 控制台切到 usb_serial（本板只有原生 USB 口，uart0 没接出去）。
+ */
+
+&esp32_bt_hci {
+	status = "okay";
+
+	/*
+	 * 关键一行：ESP32 的蓝牙控制器会"宣称"支持 Controller-to-Host 流控
+	 * （Supported Commands 里那一位是 1），但实际拒绝 Host Buffer Size 命令，
+	 * 于是 bt_enable() 在初始化阶段就返回 -5，日志是：
+	 *     bt_hci_core: opcode 0x0c33 status 0x11
+	 *     Bluetooth init failed (err -5)
+	 * 0x0c33 = OGF 0x03 / OCF 0x33 = Host Buffer Size；0x11 = Unsupported Feature or Parameter Value。
+	 *
+	 * Zephyr 4.5 新增了 no-flow-control 这个 HCI quirk（release notes 里明确写了
+	 * "controllers that advertise but reject the controller to host flow control commands"），
+	 * 打开它，host 就会跳过这一串命令。
+ 	 * no-auto-dle 是 esp32 bt-hci 绑定的默认值，这里显式写全，避免被覆盖。
+	 */
+	bt-hci-quirks = "no-auto-dle", "no-flow-control";
+};
+
+&usb_serial {
+	status = "okay";
+};
+
+/ {
+	chosen {
+		zephyr,console = &usb_serial;
+		zephyr,shell-uart = &usb_serial;
+	};
+};

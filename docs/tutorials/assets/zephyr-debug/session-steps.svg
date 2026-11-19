@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="980" height="440" fill="#fbfcfe"/>
+
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">一次 Zephyr 调试会话的五步：每个动作都有可见的下一步</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">本轮实机：r-8ef2f363 全绿 → 建会话停在 main.c:70 → 168 行下断点 → 继续 → 命中 169 行</text>
+
+  <!-- 1 -->
+  <rect x="24" y="82" width="172" height="180" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="110" y="108" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">1 · 建会话</text>
+  <text x="40" y="134" font-size="10" fill="#475569">选工程 → 调试页签</text>
+  <text x="40" y="152" font-size="10" fill="#475569">停止位置：停在 main</text>
+  <text x="40" y="170" font-size="10" fill="#475569">（或复位向量 / 直接跑）</text>
+  <text x="40" y="196" font-size="10" fill="#64748b">复位 → load ELF →</text>
+  <text x="40" y="214" font-size="10" fill="#64748b">break main → run</text>
+  <text x="40" y="242" font-size="9.5" fill="#059669">实机 3.36 s 停在 70 行</text>
+
+  <path d="M196 172 L212 172" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- 2 -->
+  <rect x="212" y="82" width="172" height="180" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="298" y="108" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">2 · 读现场</text>
+  <text x="228" y="134" font-size="10" fill="#475569">调用栈 #0 main</text>
+  <text x="228" y="152" font-size="10" fill="#475569">寄存器（PC/SP/PRIMASK）</text>
+  <text x="228" y="170" font-size="10" fill="#475569">Zephyr：当前/就绪/空闲</text>
+  <text x="228" y="196" font-size="10" fill="#64748b">当前 0x20000110</text>
+  <text x="228" y="214" font-size="10" fill="#64748b">空闲 0x20000080</text>
+  <text x="228" y="242" font-size="9.5" fill="#059669">IRQ 栈 0x20000c00</text>
+
+  <path d="M384 172 L400 172" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- 3 -->
+  <rect x="400" y="82" width="172" height="180" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="486" y="108" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">3 · 下断点</text>
+  <text x="416" y="134" font-size="10" fill="#475569">源码 gutter 点行号</text>
+  <text x="416" y="152" font-size="10" fill="#475569">或断点页填 file:line</text>
+  <text x="416" y="170" font-size="10" fill="#475569">或函数名 / *地址</text>
+  <text x="416" y="196" font-size="10" fill="#64748b">src/main.c:168</text>
+  <text x="416" y="214" font-size="10" fill="#64748b">rev 1 · 可禁用/条件/删除</text>
+  <text x="416" y="242" font-size="9.5" fill="#059669">红色实心点 = 已启用</text>
+
+  <path d="M572 172 L588 172" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- 4 -->
+  <rect x="588" y="82" width="172" height="180" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="674" y="108" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">4 · 继续 / 单步</text>
+  <text x="604" y="134" font-size="10" fill="#475569">继续：跑到下一个断点</text>
+  <text x="604" y="152" font-size="10" fill="#475569">单步 / 步入 / 步出</text>
+  <text x="604" y="170" font-size="10" fill="#475569">运行到本行</text>
+  <text x="604" y="196" font-size="10" fill="#64748b">命中后 stop_line 高亮</text>
+  <text x="604" y="214" font-size="10" fill="#64748b">168 断点 → 停在 169</text>
+  <text x="604" y="242" font-size="9.5" fill="#059669">GDB 按语句行落点</text>
+
+  <path d="M760 172 L776 172" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- 5 -->
+  <rect x="776" y="82" width="180" height="180" rx="9" fill="#ecfdf5" stroke="#059669"/>
+  <text x="866" y="108" font-size="12" font-weight="600" fill="#047857" text-anchor="middle">5 · 收证据</text>
+  <text x="792" y="134" font-size="10" fill="#475569">审计：谁改了断点/内存</text>
+  <text x="792" y="152" font-size="10" fill="#475569">输出：停止原因与事件</text>
+  <text x="792" y="170" font-size="10" fill="#475569">监视：重启后仍在列表</text>
+  <text x="792" y="196" font-size="10" fill="#64748b">写操作带 actor + 时间</text>
+  <text x="792" y="214" font-size="10" fill="#64748b">落 .work/debug-audit.jsonl</text>
+  <text x="792" y="242" font-size="9.5" fill="#059669">人 / agent 都能查</text>
+
+  <!-- 底注 -->
+  <rect x="24" y="286" width="932" height="60" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="40" y="310" font-size="10.5" fill="#0f172a"><tspan font-weight="600">为什么必须停住</tspan>：Zephyr 页签读的是 _kernel 与各线程 TCB 的内存；目标在跑时结构随时变，读到的是拼接出来的假一致。</text>
+  <text x="40" y="332" font-size="10" fill="#64748b">所以只在 stopped 时采样：运行中点 Zephyr 页签只会显示「加载中… 或目标未停止」，不给你旧值。</text>
+
+  <rect x="24" y="360" width="932" height="60" rx="8" fill="#fff7ed" stroke="#f59e0b"/>
+  <text x="40" y="384" font-size="10.5" fill="#0f172a"><tspan font-weight="600">继续之前先确认 CONFIG_DEBUG=y</tspan>：主循环在 WFI/STOP 时，不开冻结位会表现成 openocd 读寄存器失败、gdb pc=0。</text>
+  <text x="40" y="406" font-size="10" fill="#92400e">这不是崩溃，是低功耗门控；完整复盘见 10 号教程 §5.1，本轮 f411_breath 已带 CONFIG_DEBUG=y。</text>
+</svg>

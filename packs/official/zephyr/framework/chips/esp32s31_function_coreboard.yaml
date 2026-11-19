@@ -1,0 +1,28 @@
+# packs/official/zephyr/framework/chips/esp32s31_function_coreboard.yaml
+#
+# 自研板（真相在 west/zephyr/boards/espressif/ 下，仓库 boards/ 是归档副本）。
+# 三段 target：<board>/<soc>/<core>（hpcore = 高性能核）。
+
+id: esp32s31_function_coreboard
+vendor: zephyr
+platform: framework
+part: ESP32-S31
+target: esp32s31_function_coreboard/esp32s31/hpcore
+core_name: Xtensa LX7
+
+serial:
+  baud: 115200
+
+debug:
+  gdb_key: gdb_zephyr_xtensa
+  addr2line_key: addr2line_zephyr_xtensa
+  openocd_key: openocd_esp32
+  # 整份 cfg（内部 source board/esp32s31-builtin.cfg），只有 Espressif 那份有该脚本
+  openocd_config: boards/esp32s31_function_coreboard/support/openocd.cfg
+  device: esp32s31
+
+flash:
+  # ★ runner 名 = runners.yaml 的 flash-runner（esp32，不是 esptool 的包名 esp）
+  runner: esp32
+  # ★ 烧录口与 esp32s3_devkitc 同源：--esp-device 旗标归芯片包声明（见前者注释）
+  extra_args: ["--esp-device", "${serial_port}"]

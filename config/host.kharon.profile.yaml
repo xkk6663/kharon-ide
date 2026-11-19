@@ -1,0 +1,83 @@
+# config/host.kharon.profile.yaml —— Kharon / Zephyr 主机 profile（入库）
+#
+# 分层：环境变量 > host.local.yaml:kharon > 本文件。
+# 选择方式：`ELAB_HOST=kharon`（kharon 启动脚本已自动设置）。
+#
+# 三条纪律：
+#   1. 只写事实（某工具装在哪），不写"怎么编译"——那是 provider 的事。
+#   2. 一律用正斜杠 + 仓库内相对路径（${ELAB_ROOT}），换机器只改 host.local.yaml。
+#   3. 命令模板一律 `python -m west`，不用 `west.exe`：
+#      venv 的 console-script 内嵌了创建时的绝对路径，目录一搬就静默失效。
+
+host:
+  os: windows
+  exec_ext: .exe
+
+tools:
+  # 构建三件套（上游 .tools/ 搬进 .deps/ 后的位置）
+  west_python: { path: ${ELAB_ROOT}/.deps/venv/Scripts/python.exe }
+  cmake: { path: ${ELAB_ROOT}/.deps/tools/cmake/cmake-3.30.2-windows-x86_64/bin/cmake.exe }
+  ninja: { path: ${ELAB_ROOT}/.deps/tools/ninja/ninja.exe }
+  ccache: { path: ${ELAB_ROOT}/.deps/tools/ccache/ccache-4.14.3-windows-x86_64/ccache.exe }
+
+  # ── Zephyr 工作区（west 事实）──────────────────────────────
+  zephyr:
+    workspace: ${ELAB_ROOT}/west              # west topdir（provider 的 cwd 必须是它）
+    base: ${ELAB_ROOT}/west/zephyr            # ZEPHYR_BASE
+    sdk: null                                 # ← host.local.yaml（ZEPHYR_SDK_INSTALL_DIR）
+    venv_scripts: ${ELAB_ROOT}/.deps/venv/Scripts
+    ccache_dir: ${ELAB_ROOT}/.deps/ccache
+    # 自研板 = Zephyr module（真相在 zephyr_modules/elab-boards/，经
+    # EXTRA_ZEPHYR_MODULES 接入构建与 west boards）
+    boards_local: ${ELAB_ROOT}/zephyr_modules/elab-boards/boards
+    jobs: "8"
+    # PATH 前置用的**目录**（env_prepend_path 只接受目录，不能传 exe 路径）
+    cmake_bin_dir: ${ELAB_ROOT}/.deps/tools/cmake/cmake-3.30.2-windows-x86_64/bin
+    ninja_bin_dir: ${ELAB_ROOT}/.deps/tools/ninja
+    ccache_bin_dir: ${ELAB_ROOT}/.deps/tools/ccache/ccache-4.14.3-windows-x86_64
+    gnu_bin_dir: null                         # ← host.local.yaml
+
+  # ── 调试器：一条链对应一种架构，芯片侧只写键名 ──────────────
+  gdb_zephyr_arm:    { path: null }           # ← host.local.yaml
+  gdb_zephyr_riscv:  { path: null }
+  gdb_zephyr_xtensa: { path: null }
+  # 兼容 plan.debug_profile 的既有取用（ARM 板走这条）
+  gdb: { path: null }
+
+  # ── OpenOCD：两份，别混用 ─────────────────────────────────
+  # xpack 那份**没有** esp32s31/esp32s3 的 board 脚本；ESP 系必须用 Espressif 那份。
+  openocd:
+    path: null
+    scripts: null
+  openocd_esp32:
+    path: null
+    scripts: null
+
+  # ── 符号化（logdecode 的 symbolize.tool_key 从这里取）──────
+  addr2line_zephyr_arm:    { path: null }
+  addr2line_zephyr_riscv:  { path: null }
+  addr2line_zephyr_xtensa: { path: null }
+
+# ── 发现根 ────────────────────────────────────────────────────
+# providers/official 整棵**不能**进 roots：installed 与 official 同名会被判重名。
+# 只把 zephyr 那一支挂进来（classic 的 provider 走 installed）。
+providers:
+  roots:
+    - ${ELAB_ROOT}/providers/installed
+    - ${ELAB_ROOT}/providers/official/zephyr
+
+# 驾驶舱装配：kharon.yaml（工作区集合 + 只显示 zephyr 工程）。
+profile: kharon
+
+# ── 探针（L0）─────────────────────────────────────────────────
+# ★ 刻意不写 speed：Zephyr 路径走整份 cfg，openocd 自己协商到 2000 kHz 已实测稳定。
+probes:
+  default: dap
+  list:
+    dap:
+      backend: cmsis-dap
+      interface_cfg: interface/cmsis-dap.cfg
+      transport: swd
+
+serial:
+  default_baud: 115200

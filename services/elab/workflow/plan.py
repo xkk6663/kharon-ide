@@ -1,0 +1,413 @@
+"""elab.plan —— 把 (项目, 芯片, 主机) 三份数据编译成一份可执行构建计划。
+
+``doctor`` 与 ``build`` **共用**同一份 plan，从根上杜绝"校验的命令 ≠ 执行的命令"。
+plan 里没有任何路径是手写的：全部来自 YAML 插值 + L0 主机层派生。
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from elab.platform import zephyr_meta
+from elab.core.config import Config, ElabError, Host, to_fwd
+from elab.platform.ota_layout import gen_header_path, normalize_ota_layout
+from elab.core.version import parse_version
+
+
+@dataclass
+class Plan:
+    cfg: Config
+    host: Host
+    proj: dict
+    chip: dict
+    name: str = ""
+    source_dir: str = ""
+    work_dir: str = ""
+    generator: str = "Ninja"
+    toolchain_file: str = ""
+    project_include: str = ""
+    linker_script: str = ""
+    build_type: str = "Debug"
+    project_name: str = ""
+    cmake_args: list[str] = field(default_factory=list)
+    artifacts: dict = field(default_factory=dict)
+    probe: str = ""
+    gdb_script: str = ""
+    flash_images: list[dict] = field(default_factory=list)
+    link_channel: str = "exe_flags"
+    # ★ OTA 布局单源化（方案 A/M1）：chips/*.yaml ota_layout 节的归一化视图
+    #   （int 值）。None = 芯片未声明 → 不下传 gen 头，port 头兜底（零回归）。
+    ota_layout: dict | None = None
+    # ★ 版本声明（双槽方案 §9.1）：projects yaml `version: "1.2.3"` → (maj,min,pat)。
+    #   None = 工程未声明版本（版本机制可选）。build 号由 builder 真跑时分配。
+    version: tuple[int, int, int] | None = None
+    # ★ C1 组合工程：chips yaml `ota_layout.boot_project` 声明的 boot 工程。
+    #   非空 = build app 成功后自动级联构建该工程（builder.build_with_boot）、
+    #   flash 时按台账决定 boot 镜像是否进烧录会话（flash.boot_flash_decision）。
+    boot_project: str = ""
+
+    # ── 派生路径 ────────────────────────────────────────────────
+    @property
+    def elf(self) -> str:
+        return self.artifacts.get("elf", "")
+
+    @property
+    def hex(self) -> str:
+        return self.artifacts.get("hex", "")
+
+    @property
+    def bin(self) -> str:
+        return self.artifacts.get("bin", "")
+
+    @property
+    def map_file(self) -> str:
+        return self.artifacts.get("map", "")
+
+    def configure_cmd(self) -> list[str]:
+        """cmake configure 命令行（与干跑验证报告里的手工命令逐字对应）。"""
+        cmake = self.host.cmake
+        if cmake in ("", "auto", None):
+            cmake = "cmake"
+        cmd = [
+            cmake,
+            "-S",
+            self.source_dir,
+            "-B",
+            self.work_dir,
+            "-G",
+            self.generator,
+        ]
+        cmd += self.cmake_args
+        return cmd
+
+    def build_cmd(self) -> list[str]:
+        cmake = self.host.cmake
+        if cmake in ("", "auto", None):
+            cmake = "cmake"
+        return [cmake, "--build", self.work_dir]
+
+    def shell_preview(self) -> str:
+        """给人类/CI 阅读的单行预览。"""
+        return " \\\n  ".join(_shell_join(a) for a in [self.configure_cmd()])
+
+    def debug_profile(self) -> dict:
+        """调试会话需要的派生参数（只读；不改既有字段）。
+
+        ★ 这里是"launch.json 的替代品"：探针/芯片/elf/load 全部从既有
+          ``project.yaml`` + ``chip.yaml`` + ``host.yaml`` 派生，用户不用写配置。
+
+        三条链（第三分支 = Zephyr，2026-11-18 接入）
+        -------------------------------------------
+        classic 走「host.gdb + interface/target 两段 cfg」；ESP-IDF 换 riscv gdb
+        且不 load；**Zephyr 一条完全不同的形态**：板级 openocd 配置是
+        ``source [find interface/...] + source [find target/...] + reset_config``
+        混写的**单份 cfg**，塞不进"interface + target 两段"的既有校验。
+
+        于是芯片包用两个**键名**声明（不写死路径）：
+          * ``debug.gdb_key`` / ``debug.addr2line_key`` → ``host.tool(key)``
+          * ``debug.openocd_key`` + ``debug.openocd_config`` → 整份 cfg
+
+        ★ 优先级（方案 §6.1 红线）：**构建产物 > 芯片包 > 主机默认**。
+          ``zephyr/runners.yaml`` 是 configure 阶段由 board.cmake 生成的、
+          Zephyr 侧那一半"单一事实源"（gdb/openocd 绝对路径 + scripts 搜索路径）。
+          芯片包只在它没覆盖到的探针接口层做**覆盖**（DAP-Link ≠ ST-Link），
+          包里写了的键优先——但包**永远不写** memory/core/Kconfig 那些事实。
+        """
+        dbg = self.chip.get("debug") or {}
+        backend = str(dbg.get("backend") or "openocd")
+        # ESP-IDF 的 OpenOCD / GDB 与 ARM 那套是两套独立安装，不能混用
+        esp_idf = backend in ("esp-idf", "idf")
+        gdb = (self.host.gdb_riscv or self.host.gdb) if esp_idf else self.host.gdb
+        openocd = (self.host.openocd_esp32 or self.host.openocd) if esp_idf else self.host.openocd
+        openocd_scripts = (
+            (self.host.openocd_esp32_scripts or self.host.openocd_scripts)
+            if esp_idf else self.host.openocd_scripts
+        )
+        probe = self.host.probe(self.probe) if self.probe else {}
+        interface = probe.get("interface_cfg") or dbg.get("openocd_interface") or ""
+        if not interface and probe.get("backend"):
+            interface = f"interface/{probe['backend']}.cfg"
+
+        gdb_source = "host.gdb"
+        openocd_source = "host.openocd"
+        # ── Zephyr 分支：键名 → host.tool()，并读构建产物自报的事实 ──
+        zfacts: dict = {}
+        try:
+            if zephyr_meta.is_zephyr_build(self.work_dir):
+                zfacts = zephyr_meta.runners(self.work_dir)
+        except Exception:                     # noqa: BLE001 —— 只读数，坏文件不阻塞
+            zfacts = {}
+
+        gdb_key = str(dbg.get("gdb_key") or "")
+        if gdb_key:
+            got = self.host.tool(gdb_key)
+            if got:
+                gdb, gdb_source = got, f"host.tools.{gdb_key}"
+        if gdb_source == "host.gdb" and zfacts.get("config", {}).get("gdb"):
+            gdb, gdb_source = to_fwd(zfacts["config"]["gdb"]), "runners.yaml"
+
+        openocd_key = str(dbg.get("openocd_key") or "")
+        if openocd_key:
+            got = self.host.tool(openocd_key)
+            got_scripts = self.host.tool(openocd_key, "scripts")
+            if got:
+                openocd = got
+                openocd_source = f"host.tools.{openocd_key}"
+                if got_scripts:
+                    openocd_scripts = got_scripts
+
+        # ★ Zephyr 的 openocd 也以构建产物自报为准（与 gdb 同一条规矩）：
+        #   board.cmake 把 **SDK 自带那份** openocd 的绝对路径与 scripts 搜索路径
+        #   写进 runners.yaml（config.openocd / openocd_search）。芯片包的
+        #   `debug.openocd_key` 只是"宿主上有个 openocd"的兜底键 —— 让它盖掉
+        #   runners.yaml，就分叉成"`west debug` 用 SDK openocd、内核烧录用另一个
+        #   版本"（本机实测：at32 2.0.9 vs SDK hosttools，同一份 cfg 两套行为）。
+        z_oc = (zfacts.get("config") or {}).get("openocd")
+        if z_oc:
+            openocd, openocd_source = to_fwd(z_oc), "runners.yaml"
+            search = (zfacts.get("config") or {}).get("openocd_search") or []
+            if search:
+                openocd_scripts = to_fwd(search[0])
+
+        #: 整份 openocd cfg（Zephyr 形态）。相对路径按 仓库根 → 工程根 → 构建目录 找。
+        oc_cfg = self._resolve_openocd_config(str(dbg.get("openocd_config") or ""))
+
+        return {
+            "project": self.name,
+            "chip": str(self.chip.get("id") or ""),
+            "part": str(self.chip.get("part") or ""),
+            "backend": backend,
+            "elf": to_fwd(self.elf),
+            "gdb": to_fwd(gdb),
+            "gdb_source": gdb_source,
+            "openocd": to_fwd(openocd),
+            "openocd_source": openocd_source,
+            "openocd_scripts": to_fwd(openocd_scripts),
+            "openocd_config": oc_cfg,
+            "probe": self.probe,
+            "interface": interface,
+            "target": str(dbg.get("openocd_target") or ""),
+            "device": str(dbg.get("device") or ""),
+            "speed": probe.get("speed"),
+            "svd": self.host.resolve_svd(dbg.get("svd")) or "",
+            "svd_name": str(dbg.get("svd") or ""),
+            # 符号化（崩机回溯 → 文件:行）：pack 只写键名
+            "addr2line": self.host.tool(str(dbg.get("addr2line_key") or "")),
+            # flash runner（Zephyr: openocd / dfu-util / jlink / esp32 …）
+            "runner": str((self.chip.get("flash") or {}).get("runner")
+                          or zfacts.get("flash_runner") or ""),
+            "debug_runner": str(zfacts.get("debug_runner") or ""),
+            "zephyr": zfacts,
+            # C33e 判据：声明了 flash.images = 只调试已烧录镜像，不 load。
+            # ESP-IDF 的调试镜像已由 idf.py flash 烧进 flash，GDB 不做 load。
+            "load": (False if esp_idf else (bool(dbg.get("load"))
+                                            if "load" in dbg else not bool(self.flash_images))),
+            "flash_images": list(self.flash_images),
+            "gdb_script": to_fwd(self.gdb_script),
+            "work_dir": self.work_dir,
+        }
+
+    def _resolve_openocd_config(self, name: str) -> str:
+        """``debug.openocd_config`` → 存在的绝对路径（找不到返回空，不抛错）。"""
+        return resolve_openocd_config(name, self.cfg.root, self.source_dir, self.work_dir)
+
+
+def _shell_join(parts: list[str]) -> str:
+    out = []
+    for p in parts:
+        out.append(f'"{p}"' if (" " in p or "(" in p) else p)
+    return " ".join(out)
+
+
+def _parse_flash_images(proj: dict) -> list[dict]:
+    """解析并校验 ``flash.images``（C33 OTA 双镜像）。
+
+    每项：``{path, format: elf|bin, address?, ld?}``
+      * ``format`` 必填且只能是 elf/bin；
+      * ``bin`` 必须带 ``address``（openocd program 的 offset；
+        M2 教训：APP 用 elf 烧录会从扇区边界向下擦，覆盖 Bootloader 尾部）；
+      * ``elf`` 的 ``address`` 可选（elf 自带地址，显式给则作为 offset 传入）；
+      * ``ld`` 可选：仅 doctor 镜像级内存对账用（缺省回退 build.linker_script）。
+
+    未声明 ``flash`` 节 → 返回 []（单镜像模式，与旧行为完全一致）。
+    """
+    images = ((proj.get("flash") or {}).get("images")) or []
+    if not isinstance(images, list):
+        raise ElabError(f"flash.images 必须是列表：{proj.get('name')}")
+    out: list[dict] = []
+    for i, item in enumerate(images):
+        if not isinstance(item, dict):
+            raise ElabError(f"flash.images[{i}] 必须是映射（path/format/...）：{proj.get('name')}")
+        path = (item.get("path") or "").strip()
+        fmt = (item.get("format") or "").strip().lower()
+        if not path:
+            raise ElabError(f"flash.images[{i}] 缺少 path：{proj.get('name')}")
+        if fmt not in ("elf", "bin"):
+            raise ElabError(f"flash.images[{i}].format 只能是 elf 或 bin：{fmt!r}")
+        addr = str(item.get("address") or "").strip()
+        # ★ 兼容裸 0x 字面量：YAML 会把 address: 0x08000000 解析成 int（f411_boot 实测），
+        #   这里归一化为 "0x..." 字符串，避免用户写法不同导致行为不一致。
+        if isinstance(item.get("address"), int):
+            addr = hex(item["address"])
+        if fmt == "bin" and not addr:
+            raise ElabError(
+                f"flash.images[{i}]（bin）必须声明 address —— "
+                f"M2 教训：APP 不带显式地址烧录会擦掉 Bootloader（{proj.get('name')}）"
+            )
+        if addr and not addr.lower().startswith("0x"):
+            raise ElabError(f"flash.images[{i}].address 需为 0x 十六进制：{addr!r}")
+        out.append({
+            "path": to_fwd(path),
+            "format": fmt,
+            "address": addr,
+            "ld": to_fwd(item["ld"]) if item.get("ld") else "",
+        })
+    return out
+
+
+def resolve_boot_project(ota_raw: object, proj_name: str,
+                         project_names) -> str:
+    """★ C1 组合工程：解析 chips yaml ``ota_layout.boot_project``。
+
+    :param ota_raw: chip["ota_layout"] 原始 dict（未归一化）
+    :param proj_name: 当前工程名
+    :param project_names: cfg.projects 的键集合（校验工程存在）
+    :return: boot 工程名；未声明返回 ""
+    :raises ElabError: 声明的工程不存在（plan 阶段 fail-fast）
+
+    ★ 自引用 = "我就是 boot"：boot 工程与 app 共用同一份 chips yaml，
+      其 ota_layout.boot_project 天然指向自己 —— 此时返回 ""（boot 自身
+      不再级联、也不参与冻结台账），这正是组合工程的预期语义。
+    """
+    if not isinstance(ota_raw, dict):
+        return ""
+    bp = str(ota_raw.get("boot_project") or "").strip()
+    if not bp or bp == proj_name:
+        return ""
+    if bp not in set(project_names):
+        known = ", ".join(sorted(project_names)) or "(无)"
+        raise ElabError(
+            f"ota_layout.boot_project 未找到工程：{bp}（可选：{known}）")
+    return bp
+
+
+def plan_for(cfg: Config, proj_name: str) -> Plan:
+    """构造一个项目的构建计划。"""
+    cfg.host  # 触发 L0 加载（缺文件时立刻报错）
+    host = Host(cfg)
+    proj = cfg.resolved_project(proj_name)
+    chip = cfg.chip_of(proj)
+    build = proj.get("build") or {}
+
+    # 构建委托给 tools 时，内核不执行 cmake —— build.kind 只是描述（如 esp-idf）。
+    _build_step = str((proj.get("steps") or {}).get("build") or "")
+    if not _build_step.startswith("tool:") and build.get("kind", "cmake") != "cmake":
+        raise ElabError(f"暂不支持的构建类型：{build.get('kind')}（目前仅 cmake）")
+
+    p = Plan(cfg=cfg, host=host, proj=proj, chip=chip, name=proj_name)
+    p.source_dir = to_fwd(proj.get("root", ""))
+    p.work_dir = to_fwd(build.get("work_dir", ""))
+    p.generator = build.get("generator", "Ninja")
+    p.toolchain_file = to_fwd(build.get("toolchain_file", ""))
+    p.project_include = to_fwd(build.get("project_include", ""))
+    p.linker_script = to_fwd(build.get("linker_script", ""))
+    p.build_type = build.get("build_type", "Debug")
+    p.project_name = build.get("project_name", proj_name)
+    p.artifacts = proj.get("artifacts") or {}
+    p.probe = (proj.get("debug") or {}).get("probe", "")
+    p.gdb_script = to_fwd((proj.get("debug") or {}).get("gdb_script", ""))
+    p.flash_images = _parse_flash_images(proj)
+    p.link_channel = (build.get("link_channel") or "exe_flags").strip()
+    if p.link_channel not in ("exe_flags", "c_flags"):
+        raise ElabError(
+            f"build.link_channel 只能是 exe_flags 或 c_flags：{p.link_channel!r}（{proj_name}）"
+        )
+    # ★ OTA 布局单源化（方案 A/M1）：声明了 ota_layout 就在 plan 阶段归一化校验
+    #   （缺区/重叠 → fail-fast，不进构建）。未声明 → None，完全向后兼容。
+    if chip.get("ota_layout"):
+        p.ota_layout = normalize_ota_layout(chip["ota_layout"], chip.get("id", ""))
+        # ★ C1 组合工程：boot_project 与分区表同源（chips yaml），plan 阶段校验
+        p.boot_project = resolve_boot_project(chip["ota_layout"], proj_name,
+                                              cfg.projects)
+    # ★ 版本声明（双槽方案 §9.1）：声明非法在 plan 阶段 fail-fast。
+    p.version = parse_version(proj.get("version"), proj_name)
+
+    core = chip.get("core") or {}
+    args: list[str] = []
+
+    # ninja：用 -DCMAKE_MAKE_PROGRAM 注入，不依赖预设
+    if p.generator == "Ninja":
+        if not host.ninja:
+            raise ElabError("generator=Ninja 但 elab.host.yaml 未声明 tools.ninja.path")
+        args.append(f"-DCMAKE_MAKE_PROGRAM={to_fwd(host.ninja)}")
+
+    # ★ 两个技术支点：命令行接管工具链 + project() 之后盖章芯片参数
+    if p.toolchain_file:
+        args.append(f"-DCMAKE_TOOLCHAIN_FILE={p.toolchain_file}")
+    if p.project_include:
+        args.append(f"-DCMAKE_PROJECT_INCLUDE={p.project_include}")
+
+    # 主机事实（D1：让工具链文件自己也能定位 compiler 目录）
+    args.append(f"-DELAB_ARM_GCC_ROOT={host.gcc_root}")
+    # 芯片差异 —— 全部的跨芯片差异就浓缩在这 4 个值里
+    args.append(f"-DELAB_CPU={core.get('cpu', '')}")
+    args.append(f"-DELAB_FPU={core.get('fpu', '')}")
+    # ★ N7：M4F 级芯片（如 STM32F411）的 FPU 类型（fpv4-sp-d16）。老 yaml 无此字段
+    #   则不下传，gcc.cmake/inject.cmake 亦不产出 -mfpu —— 完全向后兼容。
+    if core.get('mfpu'):
+        args.append(f"-DELAB_MFPU={core.get('mfpu')}")
+    args.append(f"-DELAB_CHIP={chip.get('id', '')}")
+    if p.linker_script:
+        args.append(f"-DELAB_LD={p.linker_script}")
+
+    # ★ C33：链接盖章通道。B 类（行内 include 自带工具链）必须走 CMAKE_C_LINK_FLAGS ——
+    #   唯一能让业务工程 bootloader 的 string(REPLACE ...) 防身继续生效的通道
+    #   （详见 toolchains/inject.cmake 与 docs/设计约束.md C33）。
+    args.append(f"-DELAB_LINK_CHANNEL={p.link_channel}")
+
+    # ★ N6 修复：-Wl,-Map 的落点由 plan 显式下传。
+    #   两种工程各丢一次，原因相反，所以不能靠"工程自带的工具链"来留它：
+    #     【B 类】AT32 的 CMakeLists 在 project() 之前 include 自带工具链，
+    #            其 -Wl,-Map 落在 CMAKE_C_LINK_FLAGS 里，被 inject.cmake 的
+    #            unset(CMAKE_C_LINK_FLAGS) 一并清掉（该 unset 是为了消除双份 -T）。
+    #     【A 类】STM32 的工具链只挂在 CMakePresets 的 toolchainFile 上，elab 用
+    #            -DCMAKE_TOOLCHAIN_FILE 接管后该文件【根本不执行】→ 从未有过 Map。
+    #   也不靠 ${CMAKE_PROJECT_NAME} 反推文件名（E6 猜测）：at32_test 就手写了
+    #   set(CMAKE_PROJECT_NAME TEST)，一旦与 artifacts.map 的基名漂移就会静默错位。
+    map_path = p.artifacts.get("map") or ""
+    if map_path:
+        args.append(f"-DELAB_MAP_FILE={to_fwd(map_path)}")
+
+    # ★ OTA 布局 gen 头路径下传（方案 A/M1）：inject.cmake 把它转成
+    #   `-include` 强制每个 C 翻译单元最先包含。文件本体由 builder 在
+    #   configure 前落盘（M2 干跑只读预演，plan 阶段刻意不写盘）。
+    if p.ota_layout:
+        args.append(f"-DELAB_OTA_LAYOUT_GEN={to_fwd(str(gen_header_path(p.work_dir)))}")
+
+    args.append(f"-DCMAKE_BUILD_TYPE={p.build_type}")
+    p.cmake_args = args
+    return p
+
+
+def resolve_openocd_config(name: str, *roots) -> str:
+    """``debug.openocd_config`` → 存在的绝对路径；找不到返回空串（不抛错）。
+
+    为什么容忍"找不到"：预览（``--dry-run``）要在**还没 configure** 时就能
+    显示命令；真跑时由 ``flash._openocd_argv`` fail-fast，报错点离根因更近。
+
+    查找顺序：绝对路径直判 → 仓库根 → 工程根 → 构建目录。芯片包里写
+    ``applications/stm32f4/common/dap_link_openocd.cfg``（仓库根相对）是最常见的形态。
+    """
+    if not name:
+        return ""
+    p = Path(to_fwd(name))
+    if p.is_absolute():
+        return to_fwd(p) if p.is_file() else ""
+    for root in roots:
+        if not str(root or "").strip():
+            continue
+        cand = Path(str(root)) / name
+        if cand.is_file():
+            return to_fwd(cand)
+    return ""

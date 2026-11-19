@@ -1,0 +1,35 @@
+# config/host.local.yaml.example —— 复制到仓库根 host.local.yaml 后填写本机实况
+#
+#   Copy-Item config\host.local.yaml.example host.local.yaml
+#
+# host.local.yaml 已 gitignore：本机绝对路径永不入库。
+# 本仓只保留 Kharon/Zephyr 产品线：ELAB_HOST=kharon。
+# 缺哪个键，`kharon doctor --strict-host` 会指出 profile、键名与修复位置。
+
+kharon:
+  tools:
+    zephyr:
+      sdk: C:/path/to/zephyr-sdk
+      workspace: ${ELAB_ROOT}/west       # 工作区可放在仓内，也可指到外部工作区
+      base: ${ELAB_ROOT}/west/zephyr
+      gnu_bin_dir: C:/path/to/zephyr-sdk/gnu/arm-zephyr-eabi/bin
+    gdb_zephyr_arm:
+      path: C:/path/to/arm-zephyr-eabi-gdb.exe
+    gdb_zephyr_riscv:
+      path: C:/path/to/riscv64-zephyr-elf-gdb.exe
+    gdb_zephyr_xtensa:
+      path: C:/path/to/xtensa-espressif_esp32s3-zephyr-elf-gdb.exe
+    gdb:
+      path: C:/path/to/arm-zephyr-eabi-gdb.exe
+    openocd:
+      path: C:/path/to/openocd.exe
+      scripts: C:/path/to/openocd/scripts
+    openocd_esp32:
+      path: C:/path/to/openocd-esp32.exe
+      scripts: C:/path/to/openocd-esp32/scripts
+    addr2line_zephyr_arm:
+      path: C:/path/to/arm-zephyr-eabi-addr2line.exe
+    addr2line_zephyr_riscv:
+      path: C:/path/to/riscv64-zephyr-elf-addr2line.exe
+    addr2line_zephyr_xtensa:
+      path: C:/path/to/xtensa-espressif_esp32s3-zephyr-elf-addr2line.exe

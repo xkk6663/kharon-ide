@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 430" width="980" height="430" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <rect x="0" y="0" width="980" height="430" fill="#fbfcfe"/>
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">F411 串口压测：三个场景的关键数字</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">纯 PING、纯下行、双向混合；RTT 退化来自 USB 半双工 + 任务调度，不是 UART 硬件</text>
+
+  <!-- RTT panel -->
+  <rect x="24" y="76" width="470" height="280" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="40" y="100" font-size="11.5" font-weight="600" fill="#0f172a">RTT（ms，越低越好）</text>
+  <line x1="60" y1="300" x2="480" y2="300" stroke="#cbd5e1"/>
+  <line x1="60" y1="300" x2="60" y2="116" stroke="#cbd5e1"/>
+  <!-- grid -->
+  <line x1="60" y1="250" x2="480" y2="250" stroke="#f1f5f9"/>
+  <line x1="60" y1="200" x2="480" y2="200" stroke="#f1f5f9"/>
+  <line x1="60" y1="150" x2="480" y2="150" stroke="#f1f5f9"/>
+  <text x="36" y="304" font-size="9" fill="#94a3b8">0</text>
+  <text x="34" y="254" font-size="9" fill="#94a3b8">12.5</text>
+  <text x="34" y="204" font-size="9" fill="#94a3b8">25</text>
+  <text x="34" y="154" font-size="9" fill="#94a3b8">37.5</text>
+  <text x="34" y="120" font-size="9" fill="#94a3b8">50</text>
+
+  <!-- pure: min 5.75 mean 12.46 p99 13.9 -->
+  <rect x="92" y="277" width="34" height="23" fill="#93c5fd"/>
+  <rect x="132" y="250" width="34" height="50" fill="#60a5fa"/>
+  <rect x="172" y="244" width="34" height="56" fill="#2563eb"/>
+  <text x="109" y="320" font-size="9" fill="#475569" text-anchor="middle">min</text>
+  <text x="149" y="320" font-size="9" fill="#475569" text-anchor="middle">mean</text>
+  <text x="189" y="320" font-size="9" fill="#475569" text-anchor="middle">p99</text>
+
+  <!-- mixed: 37.82 mean, 44.06 p99 -->
+  <rect x="252" y="149" width="34" height="151" fill="#fbbf24"/>
+  <rect x="292" y="124" width="34" height="176" fill="#f59e0b"/>
+  <text x="269" y="320" font-size="9" fill="#475569" text-anchor="middle">mean</text>
+  <text x="309" y="320" font-size="9" fill="#475569" text-anchor="middle">p99</text>
+
+  <rect x="380" y="132" width="12" height="12" fill="#2563eb"/><text x="397" y="142" font-size="9.5" fill="#475569">纯 PING</text>
+  <rect x="380" y="154" width="12" height="12" fill="#f59e0b"/><text x="397" y="164" font-size="9.5" fill="#475569">双向混合</text>
+  <text x="380" y="196" font-size="9.5" fill="#475569">纯 PING：</text>
+  <text x="380" y="214" font-size="9.5" fill="#475569">12.46 / 13.90 ms</text>
+  <text x="380" y="238" font-size="9.5" fill="#475569">混合：</text>
+  <text x="380" y="256" font-size="9.5" fill="#475569">37.82 / 44.06 ms</text>
+  <text x="380" y="280" font-size="9.5" fill="#b45309">≈ 3× 退化</text>
+
+  <!-- throughput panel -->
+  <rect x="510" y="76" width="446" height="280" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="526" y="100" font-size="11.5" font-weight="600" fill="#0f172a">下行吞吐 / 丢包</text>
+  <line x1="546" y1="300" x2="936" y2="300" stroke="#cbd5e1"/>
+  <line x1="546" y1="300" x2="546" y2="116" stroke="#cbd5e1"/>
+  <text x="522" y="304" font-size="9" fill="#94a3b8">0</text>
+  <text x="522" y="204" font-size="9" fill="#94a3b8">50 Hz</text>
+  <text x="522" y="124" font-size="9" fill="#94a3b8">100 Hz</text>
+
+  <rect x="600" y="116" width="56" height="184" fill="#059669"/>
+  <text x="628" y="110" font-size="9.5" fill="#047857" text-anchor="middle">91.8</text>
+  <text x="628" y="320" font-size="9" fill="#475569" text-anchor="middle">纯下行</text>
+
+  <rect x="720" y="129" width="56" height="171" fill="#34d399"/>
+  <text x="748" y="123" font-size="9.5" fill="#047857" text-anchor="middle">85.7</text>
+  <text x="748" y="320" font-size="9" fill="#475569" text-anchor="middle">双向混合</text>
+
+  <rect x="820" y="116" width="116" height="86" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="832" y="136" font-size="9.5" fill="#475569">丢包</text>
+  <text x="832" y="156" font-size="10.5" fill="#0f172a">纯 PING 0.5%</text>
+  <text x="832" y="176" font-size="10.5" fill="#0f172a">混合 0.86%</text>
+  <text x="832" y="196" font-size="9" fill="#94a3b8">均 ≤1%</text>
+
+  <rect x="820" y="212" width="116" height="78" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="832" y="232" font-size="9.5" fill="#475569">波特效率</text>
+  <text x="832" y="252" font-size="10.5" fill="#0f172a">11.1%</text>
+  <text x="832" y="272" font-size="9" fill="#94a3b8">看协议，不看 UART</text>
+
+  <rect x="24" y="370" width="932" height="36" rx="6" fill="#ecfdf5" stroke="#059669"/>
+  <text x="40" y="393" font-size="10.5" fill="#047857">结论：<tspan font-weight="600">丢包不是固件问题（STATS 计数对得上）；RTT 3× 与 4.5Hz 掉速是 USB 半双工 + 任务抢占的代价；瓶颈在文本协议，不在 115200。</tspan></text>
+
+  <text x="24" y="424" font-size="9.5" fill="#94a3b8">口径：STM32F411CEU6 · COM10@115200 · 200 次 PING / 10s 下行 / 10s 混合（报告 §4）</text>
+</svg>

@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 520" width="980" height="520" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="980" height="520" fill="#fbfcfe"/>
+
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">一次 kharon run 的六步：每步都有产物，产物就是证据</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">命令只有一条：<tspan font-family="ui-monospace, Consolas, monospace" fill="#1d4ed8">kharon run -p f411_breath --steps doctor,build,report,flash,debug_verify,monitor</tspan></text>
+
+  <!-- 输入条 -->
+  <rect x="24" y="68" width="932" height="62" rx="9" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="40" y="90" font-size="11" fill="#64748b">输入只有三份 YAML（人只写这三份，不再写 launch.json / build 脚本）</text>
+  <rect x="40" y="96" width="286" height="26" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="183" y="114" font-size="10.5" fill="#475569" text-anchor="middle">projects/kharon/f411_breath.yaml</text>
+  <rect x="340" y="96" width="286" height="26" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="483" y="114" font-size="10.5" fill="#475569" text-anchor="middle">config/host.kharon + host.local</text>
+  <rect x="640" y="96" width="300" height="26" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="790" y="114" font-size="10.5" fill="#475569" text-anchor="middle">packs/…/chips/blackpill_f411ce.yaml</text>
+
+  <!-- 六步 -->
+  <g>
+    <!-- 1 doctor -->
+    <rect x="24" y="156" width="140" height="72" rx="9" fill="#ffffff" stroke="#2563eb"/>
+    <text x="94" y="180" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">doctor</text>
+    <text x="94" y="199" font-size="9.5" fill="#64748b" text-anchor="middle">工具链 + 探针 + 串口</text>
+    <text x="94" y="216" font-size="9.5" fill="#059669" text-anchor="middle">1.70 s</text>
+
+    <!-- 2 build -->
+    <rect x="176" y="156" width="140" height="72" rx="9" fill="#ffffff" stroke="#2563eb"/>
+    <text x="246" y="180" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">build</text>
+    <text x="246" y="199" font-size="9" fill="#64748b" text-anchor="middle">west build -b &lt;board&gt;</text>
+    <text x="246" y="216" font-size="9.5" fill="#059669" text-anchor="middle">108.24 s（全量）</text>
+
+    <!-- 3 report -->
+    <rect x="328" y="156" width="140" height="72" rx="9" fill="#ffffff" stroke="#2563eb"/>
+    <text x="398" y="180" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">report</text>
+    <text x="398" y="199" font-size="9" fill="#64748b" text-anchor="middle">ninja ram/rom_report</text>
+    <text x="398" y="216" font-size="9.5" fill="#059669" text-anchor="middle">3.26 s</text>
+
+    <!-- 4 flash -->
+    <rect x="480" y="156" width="140" height="72" rx="9" fill="#ffffff" stroke="#2563eb"/>
+    <text x="550" y="180" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">flash</text>
+    <text x="550" y="199" font-size="9" fill="#64748b" text-anchor="middle">openocd program verify</text>
+    <text x="550" y="216" font-size="9.5" fill="#059669" text-anchor="middle">2.4 s</text>
+
+    <!-- 5 debug_verify -->
+    <rect x="632" y="156" width="140" height="72" rx="9" fill="#ffffff" stroke="#2563eb"/>
+    <text x="702" y="180" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="middle">debug_verify</text>
+    <text x="702" y="199" font-size="9.5" fill="#64748b" text-anchor="middle">gdb break main + bt</text>
+    <text x="702" y="216" font-size="9.5" fill="#059669" text-anchor="middle">3.2 s</text>
+
+    <!-- 6 monitor -->
+    <rect x="784" y="156" width="172" height="72" rx="9" fill="#ecfdf5" stroke="#059669"/>
+    <text x="870" y="180" font-size="12" font-weight="600" fill="#047857" text-anchor="middle">monitor</text>
+    <text x="870" y="199" font-size="9.5" fill="#047857" text-anchor="middle">串口收行 + close_on 判据</text>
+    <text x="870" y="216" font-size="9.5" fill="#059669" text-anchor="middle">3.29 s（命中即停）</text>
+  </g>
+
+  <!-- 箭头 -->
+  <path d="M164 192 L176 192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#a2)"/>
+  <path d="M316 192 L328 192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#a2)"/>
+  <path d="M468 192 L480 192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#a2)"/>
+  <path d="M620 192 L632 192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#a2)"/>
+  <path d="M772 192 L784 192" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#a2)"/>
+
+  <!-- 产物 -->
+  <text x="24" y="256" font-size="11" fill="#64748b">产物（内核只认这些，不认“应该成功了”）</text>
+
+  <rect x="24" y="266" width="140" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="94" y="288" font-size="10" fill="#475569" text-anchor="middle">West version</text>
+  <text x="94" y="304" font-size="10" fill="#475569" text-anchor="middle">v1.5.0</text>
+  <text x="94" y="322" font-size="9" fill="#94a3b8" text-anchor="middle">+ 串口/探针枚举</text>
+
+  <rect x="176" y="266" width="140" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="246" y="288" font-size="10" fill="#475569" text-anchor="middle">zephyr.elf</text>
+  <text x="246" y="304" font-size="10" fill="#475569" text-anchor="middle">zephyr.bin / .hex</text>
+  <text x="246" y="322" font-size="9" fill="#94a3b8" text-anchor="middle">+ build_info</text>
+
+  <rect x="328" y="266" width="140" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="398" y="288" font-size="10" fill="#475569" text-anchor="middle">ram.json</text>
+  <text x="398" y="304" font-size="10" fill="#475569" text-anchor="middle">rom.json</text>
+  <text x="398" y="322" font-size="9" fill="#94a3b8" text-anchor="middle">→ 旭日图 / Kconfig / dts</text>
+
+  <rect x="480" y="266" width="140" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="550" y="288" font-size="10" fill="#475569" text-anchor="middle">** Verified OK **</text>
+  <text x="550" y="304" font-size="10" fill="#475569" text-anchor="middle">flash size = 512 KiB</text>
+  <text x="550" y="322" font-size="9" fill="#94a3b8" text-anchor="middle">openocd 原文</text>
+
+  <rect x="632" y="266" width="140" height="66" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="702" y="288" font-size="10" fill="#475569" text-anchor="middle">Breakpoint 1, main ()</text>
+  <text x="702" y="304" font-size="10" fill="#475569" text-anchor="middle">at main.c:70</text>
+  <text x="702" y="322" font-size="9" fill="#94a3b8" text-anchor="middle">gdb --batch 原文</text>
+
+  <rect x="784" y="266" width="172" height="66" rx="8" fill="#ecfdf5" stroke="#86efac"/>
+  <text x="870" y="288" font-size="10" fill="#047857" text-anchor="middle">t=   2 s duty= 778 us</text>
+  <text x="870" y="304" font-size="10" fill="#047857" text-anchor="middle">frame avg=1006 min=1004</text>
+  <text x="870" y="322" font-size="9" fill="#059669" text-anchor="middle">match: close_on</text>
+
+  <!-- 事实源 -->
+  <text x="24" y="368" font-size="11" fill="#64748b">每一步要用的“事实”，来源各自独立，互不覆盖</text>
+
+  <rect x="24" y="380" width="300" height="112" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="40" y="402" font-size="11.5" font-weight="600" fill="#475569">host profile + local —— 工具在哪</text>
+  <text x="40" y="424" font-size="10" fill="#64748b">arm-zephyr-eabi-gdb / openocd / ninja</text>
+  <text x="40" y="444" font-size="10" fill="#64748b">python（west 入口）、SDK 根目录</text>
+  <text x="40" y="464" font-size="10" fill="#64748b">串口与探针白名单（probes:）</text>
+  <text x="40" y="482" font-size="9" fill="#94a3b8">换机器只改这一份</text>
+
+  <rect x="340" y="380" width="300" height="112" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="356" y="402" font-size="11.5" font-weight="600" fill="#475569">芯片包 —— 这颗板叫什么</text>
+  <text x="356" y="424" font-size="10" fill="#64748b">target: blackpill_f411ce（west -b 的值）</text>
+  <text x="356" y="444" font-size="10" fill="#64748b">debug.gdb_key / openocd_config</text>
+  <text x="356" y="464" font-size="10" fill="#64748b">flash.runner: openocd</text>
+  <text x="356" y="482" font-size="9" fill="#94a3b8">不写 memory / core（红线）</text>
+
+  <rect x="656" y="380" width="300" height="112" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="672" y="402" font-size="11.5" font-weight="600" fill="#475569">runners.yaml —— 兜底事实</text>
+  <text x="672" y="424" font-size="10" fill="#64748b">构建产物里已写好 runner 与参数</text>
+  <text x="672" y="444" font-size="10" fill="#64748b">gdb / openocd 绝对路径</text>
+  <text x="672" y="464" font-size="10" fill="#64748b">芯片包没声明时用它，并标 source</text>
+  <text x="672" y="482" font-size="9" fill="#94a3b8">构建与调试不会各说各话</text>
+</svg>

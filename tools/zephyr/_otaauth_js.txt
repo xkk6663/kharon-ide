@@ -1,0 +1,68 @@
+function sha256Hex(buf){
+/* 纯 JS 的 SHA-256：为什么不用 crypto.subtle —— 页面是 http://10.x.x.x，
+   浏览器只把 https/localhost 当安全上下文，非安全上下文里 crypto.subtle 是 undefined。
+   整包 850 KB 在这里约 0.2~0.4 s（手机慢一点也能接受），换来的是"期望摘要"真的由发起端算。 */
+const K=[
+0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+const len=buf.byteLength;
+const total=(((len+9)>>6)+1)*16;
+const w=new Uint32Array(total);
+for(let i=0;i<len;i++) w[i>>2]|=buf[i]<<(24-((i&3)<<3));
+w[len>>2]|=0x80<<(24-((len&3)<<3));
+w[total-2]=Math.floor(len/0x20000000);
+w[total-1]=(len<<3)>>>0;
+const rr=(x,n)=>(x>>>n)|(x<<(32-n));
+for(let b=0;b<total;b+=16){
+ const W=new Uint32Array(64);
+ for(let i=0;i<16;i++) W[i]=w[b+i];
+ for(let i=16;i<64;i++){
+  const s0=rr(W[i-15],7)^rr(W[i-15],18)^(W[i-15]>>>3);
+  const s1=rr(W[i-2],17)^rr(W[i-2],19)^(W[i-2]>>>10);
+  W[i]=(W[i-16]+s0+W[i-7]+s1)>>>0;}
+ let a=H[0],bb=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+ for(let i=0;i<64;i++){
+  const S1=rr(e,6)^rr(e,11)^rr(e,25);
+  const ch=(e&f)^((~e)&g);
+  const t1=(h+S1+ch+K[i]+W[i])>>>0;
+  const S0=rr(a,2)^rr(a,13)^rr(a,22);
+  const mj=(a&bb)^(a&c)^(bb&c);
+  const t2=(S0+mj)>>>0;
+  h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=bb;bb=a;a=(t1+t2)>>>0;}
+ H[0]=(H[0]+a)>>>0;H[1]=(H[1]+bb)>>>0;H[2]=(H[2]+c)>>>0;H[3]=(H[3]+d)>>>0;
+ H[4]=(H[4]+e)>>>0;H[5]=(H[5]+f)>>>0;H[6]=(H[6]+g)>>>0;H[7]=(H[7]+h)>>>0;}
+let hex='';
+for(let i=0;i<8;i++){const v=H[i];hex+=('00000000'+v.toString(16)).slice(-8);}
+return hex;}
+$('upbtn').onclick=async()=>{
+const f=$('fup').files[0];
+if(!f){$('otafb').className='fb bad';$('otafb').textContent='先选一个 zephyr.signed.bin（签名过的，不是裸 bin）';return}
+const v=prompt('新固件版本号（必须大于板端 '+LAST_LOCAL_VER+'）',String(LAST_LOCAL_VER+1));
+if(!v)return;
+const b=$('upbtn');b.disabled=true;$('otafb').className='fb';
+const t0=Date.now();
+try{
+$('otafb').textContent='正在算整包 SHA-256（'+Math.round(f.size/1024)+' KB）…';
+const sha=await sha256Hex(new Uint8Array(await f.arrayBuffer()));
+$('otafb').textContent='上传中 '+Math.round(f.size/1024)+' KB（首次要擦整槽，约 10 秒）…';
+const r=await fetch('http://'+location.hostname+':8080/ota',{method:'POST',
+headers:{'Content-Type':'application/octet-stream','X-Version':v,'X-Nonce':String(t0),
+'X-Force':'0','X-Sha256':sha,'X-Key':K},body:f});
+const j=await r.json();const sec=((Date.now()-t0)/1000).toFixed(1);
+if(j.ok){$('otafb').className='fb ok';
+$('otafb').textContent='slot1 已写入：期望摘要 + Flash 回读都通过（'+sec+' s，sha='+sha.slice(0,12)+'…）';
+if(confirm('现在重启切到新固件？')){
+await fetch('http://'+location.hostname+':8080/api/ota/reboot',{method:'POST',
+headers:{'X-Nonce':String(Date.now()),'X-Key':K}});
+$('otafb').textContent='已发重启请求，等 20 秒后刷新本页看新版本号';}}
+else{$('otafb').className='fb bad';
+$('otafb').textContent='被拒绝 HTTP '+r.status+'：'+(j.err||'')+'（401/400 先查口令和镜像文件）';}
+}catch(e){$('otafb').className='fb bad';$('otafb').textContent='上传失败：'+e}
+finally{b.disabled=false}};

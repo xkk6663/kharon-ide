@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 440" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="13">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6472"/>
+    </marker>
+    <marker id="arrg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f6f43"/>
+    </marker>
+    <marker id="arrr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a83232"/>
+    </marker>
+  </defs>
+
+  <style>
+    .t-dark { fill: #232a33; }
+    .t-mut  { fill: #5a6472; }
+    .t-acc  { fill: #1f6f43; }
+    .t-red  { fill: #a83232; }
+    .box    { fill: #ffffff; stroke: #c9d1d9; stroke-width: 1; }
+    .lane   { fill: #f6f8fa; stroke: #e3e8ee; }
+    .slot0  { fill: #f2fbf6; stroke: #1f6f43; stroke-width: 1.4; }
+    .slot1  { fill: #fefaf1; stroke: #b8860b; stroke-width: 1.4; }
+    .boot   { fill: #eef2f7; stroke: #5a6472; stroke-width: 1.2; }
+    .line   { stroke: #5a6472; stroke-width: 1.2; fill: none; }
+    .lineg  { stroke: #1f6f43; stroke-width: 1.4; fill: none; }
+    .liner  { stroke: #a83232; stroke-width: 1.4; fill: none; }
+    .mono   { font-family: Consolas, 'Courier New', monospace; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="440" fill="#ffffff"/>
+
+  <text x="24" y="34" class="t-dark" font-size="17" font-weight="700">MCUboot 双槽 OTA：切槽、自证、回滚各归谁管</text>
+  <text x="24" y="56" class="t-mut">ESP32 XIP 下 TEST 镜像的 trailer 回读是 -EIO（运行中 slot0 擦写被缓存挡住），
+    所以本工程用 PERMANENT 语义 + 应用侧自证窗口</text>
+
+  <!-- Flash 布局条 -->
+  <text x="24" y="88" class="t-dark" font-weight="700">4 MB Flash（partitions_0x0_amp_4M）</text>
+  <rect x="24" y="100" width="90" height="46" class="boot" rx="6"/>
+  <text x="69" y="120" text-anchor="middle" class="t-dark" font-weight="700">mcuboot</text>
+  <text x="69" y="137" text-anchor="middle" class="mono t-mut">0x0</text>
+
+  <rect x="122" y="100" width="230" height="46" class="slot0" rx="6"/>
+  <text x="237" y="120" text-anchor="middle" class="t-acc" font-weight="700">slot0（正在运行）</text>
+  <text x="237" y="137" text-anchor="middle" class="mono t-mut">signed v1.N.0 · 1376256 B</text>
+
+  <rect x="360" y="100" width="230" height="46" class="slot1" rx="6"/>
+  <text x="475" y="120" text-anchor="middle" class="t-dark" font-weight="700">slot1（候选固件落这里）</text>
+  <text x="475" y="137" text-anchor="middle" class="mono t-mut">上传写入 · 校验后才算数</text>
+
+  <text x="606" y="128" class="t-mut">…NVS</text>
+
+  <!-- 左：上传路径 -->
+  <rect x="24" y="176" width="290" height="118" class="lane" rx="8"/>
+  <text x="40" y="200" class="t-dark" font-weight="700">① 接收（设备 ：8080）</text>
+  <text x="40" y="222" class="t-mut">流式写 slot1，不攒缓冲：</text>
+  <text x="40" y="240" class="mono t-mut">SHA-256 累积 + 末尾整包比对</text>
+  <text x="40" y="262" class="mono t-mut">头/元数据 HMAC-SHA256(PSK)</text>
+  <text x="40" y="280" class="mono t-mut">nonce 单调递增（拒重放）</text>
+  <text x="40" y="298" class="mono t-mut">size > 1344KB-64KB → 拒收</text>
+
+  <!-- 右：门禁 -->
+  <rect x="356" y="176" width="290" height="118" class="lane" rx="8"/>
+  <text x="372" y="200" class="t-dark" font-weight="700">② 门禁（finish 时裁决）</text>
+  <text x="372" y="222" class="t-mut">摘要一致 + 镜像头有效</text>
+  <text x="372" y="240" class="mono t-mut">+ 版本显式递增（&gt; 本地版本）</text>
+  <text x="372" y="258" class="t-mut">全过 → 标记候选 + 记崩溃计数基线</text>
+  <text x="372" y="276" class="t-mut">不过 → abort，slot1 作废</text>
+  <text x="372" y="294" class="t-mut">force 只越"版本不升"，越不过 nonce/完整性</text>
+
+  <!-- 切槽流程 -->
+  <text x="24" y="330" class="t-dark" font-weight="700">③ 重启后</text>
+  <line x1="120" y1="325" x2="120" y2="352" class="line" marker-end="url(#arr)"/>
+  <text x="40" y="368" class="mono t-mut">mcuboot: Swap type: test</text>
+
+  <rect x="180" y="340" width="140" height="56" class="box" rx="8"/>
+  <text x="250" y="364" text-anchor="middle" class="t-dark" font-weight="700">60s 自证窗口</text>
+  <text x="250" y="382" text-anchor="middle" class="mono t-mut">link_ok + 未崩溃</text>
+
+  <rect x="400" y="340" width="120" height="56" class="slot0" rx="8"/>
+  <text x="460" y="364" text-anchor="middle" class="t-acc" font-weight="700">转正</text>
+  <text x="460" y="382" text-anchor="middle" class="mono t-mut">清候选标记</text>
+
+  <rect x="548" y="340" width="108" height="56" class="box" rx="8"/>
+  <text x="602" y="364" text-anchor="middle" class="t-red" font-weight="700">回滚</text>
+  <text x="602" y="382" text-anchor="middle" class="mono t-mut">搬回旧槽</text>
+
+  <line x1="320" y1="368" x2="396" y2="368" class="lineg" marker-end="url(#arrg)"/>
+  <line x1="320" y1="368" x2="544" y2="368" class="liner" marker-end="url(#arrr)"/>
+  <text x="352" y="360" class="mono t-acc">健康</text>
+  <text x="500" y="360" class="mono t-red">崩溃/断网/拔电</text>
+
+  <text x="24" y="424" class="t-mut">回滚是"下次重启再算"：候选固件连启动都起不来时，窗口根本没机会跑 ——
+    这条边界只能靠 USB 重刷兜底</text>
+</svg>

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_ESP32S3_KORVO
+
+# Nothing to default here yet. Peripheral switches belong in the
+# application's prj.conf, not in the board defconfig.
+
+endif # BOARD_ESP32S3_KORVO

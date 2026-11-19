@@ -1,0 +1,164 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-3);
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  padding: 2px;
+}
+/* 子块不许被压扁（column flex + height:100% 的老问题） */
+.wrap > * {
+  flex: 0 0 auto;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+}
+.barLabel {
+  font-size: var(--elab-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--elab-fg-muted);
+}
+.hint {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+}
+.spacer {
+  flex: 1 1 auto;
+}
+
+.err {
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-danger, #c0392b);
+  border-radius: var(--elab-radius);
+  color: var(--elab-danger, #c0392b);
+  font-size: var(--elab-fs-xs);
+}
+.note {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+.empty {
+  padding: var(--elab-space-4);
+  border: 1px dashed var(--elab-border-strong);
+  border-radius: var(--elab-radius);
+  color: var(--elab-fg-faint);
+  font-size: var(--elab-fs-xs);
+  line-height: 1.7;
+}
+
+.group {
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-surface);
+  overflow: hidden;
+}
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  background: var(--elab-header-grad);
+}
+.groupName {
+  font-size: var(--elab-fs-sm);
+  font-weight: 700;
+  color: var(--elab-fg);
+}
+.groupCount {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--elab-fs-xs);
+}
+.table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--elab-fg-muted);
+  padding: 6px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  white-space: nowrap;
+}
+.table td {
+  padding: 6px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  vertical-align: middle;
+}
+.table tr:last-child td {
+  border-bottom: 0;
+}
+.mono {
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  white-space: nowrap;
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pct {
+  color: var(--elab-fg-faint);
+}
+.dim {
+  color: var(--elab-fg-faint);
+}
+.board {
+  color: var(--elab-fg);
+}
+.part {
+  color: var(--elab-fg-faint);
+}
+.runId {
+  margin-left: 6px;
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  color: var(--elab-fg-faint);
+}
+
+/* 部分失败只标红那一行，不整表变灰 */
+.rowFail td {
+  background: color-mix(in srgb, var(--elab-danger, #c0392b) 8%, transparent);
+}
+
+.vOk {
+  color: var(--elab-success, #2e8b57);
+  font-weight: 600;
+}
+.vFail {
+  color: var(--elab-danger, #c0392b);
+  font-weight: 600;
+}
+.vRunning {
+  color: var(--elab-accent, #2f6fed);
+}
+.vBuilt {
+  color: var(--elab-fg-muted);
+}
+.vUnknown {
+  color: var(--elab-fg-faint);
+}
+
+.source {
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-top: 1px solid var(--elab-border);
+  font-size: 10px;
+  color: var(--elab-fg-faint);
+  line-height: 1.6;
+}

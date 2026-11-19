@@ -1,0 +1,77 @@
+/*
+ * 板级差异层（stm32f103_mini）：这块板的上游 dts 是按 STM32F103xE（256 KB flash）建的，
+ * 手上这块是 Blue Pill / STM32F103C8T6（64 KB flash + 20 KB RAM），两者引脚完全同构
+ * （LED=PC13 低电平亮、控制台=USART1 PA9/PA10、HSE 8 MHz → PLL ×9 = 72 MHz），
+ * 只有存储容量不一样，所以不新建板子，只在本工程的 overlay 里把容量改回实物值。
+ *
+ * 这样 size 报告（FLASH/RAM 百分比）才是拿 64 KB / 20 KB 当分母算的，不会用 256 KB 骗自己。
+ */
+
+/ {
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+	};
+};
+
+/* C8T6 的真实容量：64 KB flash / 20 KB SRAM（对照 dts\arm\st\f1\stm32f103X8.dtsi）。
+ * 用标签改要比重写 /soc 路径安全：DTS 按 label 合并，不会另起一棵 /memory@20000000。 */
+&flash0 {
+	reg = <0x08000000 DT_SIZE_K(64)>;
+	ranges = <0 0x8000000 DT_SIZE_K(64)>;
+};
+
+&sram0 {
+	reg = <0x20000000 DT_SIZE_K(20)>;
+};
+
+/* DAP-Link 的 CDC 串口：115200 8N1，与 PA9(TX)/PA10(RX) 的接线一致 */
+&usart1 {
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/* ---- 本工程用不到的板载外设（关掉不等于板子坏了，只是这轮不初始化） ---- */
+&usart2 {
+	status = "disabled";
+};
+
+&usart3 {
+	status = "disabled";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+&spi2 {
+	status = "disabled";
+};
+
+&rtc {
+	status = "disabled";
+};
+
+&iwdg {
+	status = "disabled";
+};
+
+&adc1 {
+	status = "disabled";
+};
+
+&die_temp {
+	status = "disabled";
+};
+
+&usb {
+	status = "disabled";
+};
+
+&timers1 {
+	status = "disabled";
+};

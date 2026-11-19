@@ -1,0 +1,507 @@
+/* 构建面板（Zephyr Dashboard）—— 内存旭日图 / Kconfig / 设备树 */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-3);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 2px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--elab-space-2);
+  flex: 0 0 auto;
+}
+
+.hint {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+}
+
+.note {
+  padding: var(--elab-space-3) var(--elab-space-2);
+  font-size: var(--elab-fs-sm);
+  color: var(--elab-fg-faint);
+  line-height: 1.7;
+}
+
+.warn {
+  margin: var(--elab-space-2) 0;
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-danger, #d9534f);
+  border-radius: var(--elab-radius);
+  font-size: var(--elab-fs-sm);
+  color: var(--elab-danger-fg, #d9534f);
+  background: var(--elab-danger-bg, rgba(217, 83, 79, 0.08));
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+  flex: 0 0 auto;
+}
+
+.depthPick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+}
+
+.depthPick select {
+  background: var(--elab-bg);
+  color: var(--elab-fg);
+  border: 1px solid var(--elab-border);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: var(--elab-fs-xs);
+}
+
+/* ── 内存 ─────────────────────────────────────────────── */
+
+.memWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-3);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.memBody {
+  display: flex;
+  gap: var(--elab-space-3);
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.sunWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+}
+
+.sun {
+  width: min(440px, 100%);
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.sunTotal {
+  fill: var(--elab-fg);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sunCap {
+  fill: var(--elab-fg-faint);
+  font-size: 11px;
+}
+
+.sunLegend {
+  text-align: center;
+  min-height: 34px;
+}
+
+.sunHoverName {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sunHoverVal {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.topList {
+  flex: 1 1 240px;
+  min-width: 220px;
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+  padding: var(--elab-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.topHead {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--elab-border);
+  margin-bottom: 2px;
+}
+
+.topRow {
+  display: grid;
+  grid-template-columns: 1fr auto 52px;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--elab-fs-xs);
+}
+
+.topName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--elab-fg);
+}
+
+.topSize {
+  font-variant-numeric: tabular-nums;
+  color: var(--elab-fg-faint);
+}
+
+.topPct {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--elab-fg-faint);
+}
+
+/* ── Kconfig ──────────────────────────────────────────── */
+
+.kcWrap,
+.dtsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-2);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.kcList,
+.dtsList {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+  padding: var(--elab-space-2);
+}
+
+.kcGroup {
+  margin-bottom: 2px;
+}
+
+.kcGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--elab-fg);
+  font-size: var(--elab-fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.kcGroupHead:hover {
+  background: var(--elab-bg-hover, rgba(127, 127, 127, 0.12));
+}
+
+.chev {
+  width: 12px;
+  flex: 0 0 12px;
+  color: var(--elab-fg-faint);
+  font-size: 10px;
+}
+
+.kcGroupName {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kcCount {
+  flex: 0 0 auto;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.kcItems {
+  padding-left: 18px;
+}
+
+.kcItem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 1px 0;
+  font-size: var(--elab-fs-xs);
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+}
+
+.kcOff {
+  opacity: 0.45;
+}
+
+.kcName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kcVal {
+  color: var(--elab-fg-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 设备树 ───────────────────────────────────────────── */
+
+.dtsNode {
+  margin-bottom: 1px;
+}
+
+.dtsHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--elab-fg);
+  font-size: var(--elab-fs-xs);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+}
+
+.dtsHead:hover {
+  background: var(--elab-bg-hover, rgba(127, 127, 127, 0.12));
+}
+
+.dtsName {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dtsSrc {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  color: var(--elab-fg-faint);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+.dtsProps {
+  border-left: 1px solid var(--elab-border);
+  padding-left: 8px;
+  margin-bottom: 4px;
+}
+
+.dtsProp {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) 1fr auto;
+  gap: 8px;
+  font-size: 10px;
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  padding: 0 0 1px 0;
+}
+
+.propName {
+  color: var(--elab-fg-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.propVal {
+  color: var(--elab-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.propSrc {
+  color: var(--elab-fg-faint);
+  cursor: help;
+}
+
+/* ── 调试图（runners.yaml）─────────────────────────────── */
+
+.runnerWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-3);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.runnerTop {
+  display: flex;
+  gap: var(--elab-space-2);
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+.runnerCard {
+  flex: 1 1 180px;
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+  padding: var(--elab-space-2) var(--elab-space-3);
+}
+
+.runnerCap {
+  font-size: 10px;
+  color: var(--elab-fg-faint);
+  margin-bottom: 2px;
+}
+
+.runnerBig {
+  font-size: var(--elab-fs-md, 15px);
+  color: var(--elab-fg);
+  font-weight: 600;
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+}
+
+.runnerChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--elab-border);
+  color: var(--elab-fg-faint);
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+}
+
+.runnerGrid {
+  /* 右列窄（~330px）时自动落成单列：两列硬挤会把参数值全变成省略号 */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--elab-space-2);
+}
+
+.runnerBlock {
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  min-width: 0;
+}
+
+.blockHead {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--elab-border);
+}
+
+.kvRow {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 8px;
+  font-size: 10px;
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  padding: 1px 0;
+}
+
+.kvKey {
+  color: var(--elab-fg-faint);
+}
+
+.kvVal {
+  color: var(--elab-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.argRow {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px;
+  font-size: 10px;
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  padding: 1px 0;
+}
+
+.argName {
+  color: var(--elab-fg-faint);
+}
+
+.argVal {
+  color: var(--elab-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 旭日图下钻面包屑 ─────────────────────────────────── */
+
+.zoomBar {
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  flex: 0 0 auto;
+}
+
+.zoomBack {
+  background: transparent;
+  border: 1px solid var(--elab-border);
+  border-radius: 4px;
+  color: var(--elab-fg);
+  font-size: var(--elab-fs-xs);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.zoomBack:hover {
+  background: var(--elab-bg-hover, rgba(127, 127, 127, 0.12));
+}
+
+.zoomName {
+  font-size: var(--elab-fs-sm);
+  color: var(--elab-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 50%;
+}

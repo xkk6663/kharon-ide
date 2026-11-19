@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" width="980" height="600" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="980" height="600" fill="#fbfcfe"/>
+
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">调试区是一条会话：gdb 的现场 + ELF 的 Zephyr 符号 → 12 个页签</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">UI 不猜：每个字段要么来自 gdb/MI，要么来自 ELF 符号 + 内存读；读不到的字段显示 —，不填默认值</text>
+
+  <!-- 目标 / 探针 -->
+  <rect x="24" y="80" width="250" height="180" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="40" y="104" font-size="12" font-weight="600" fill="#1d4ed8">目标 / 探针</text>
+  <text x="40" y="128" font-size="10.5" fill="#475569">STM32F411CEU6 · Cortex-M4F</text>
+  <text x="40" y="148" font-size="10.5" fill="#475569">WeAct Black Pill V2.0</text>
+  <text x="40" y="172" font-size="10.5" fill="#475569">DAP-Link → SWD（openocd）</text>
+  <text x="40" y="192" font-size="10.5" fill="#475569">串口 COM10 · 115200 8N1</text>
+  <text x="40" y="222" font-size="10.5" fill="#059669">复位 → 停住 → 读/写 → 继续</text>
+  <text x="40" y="244" font-size="9.5" fill="#94a3b8">SWD 与串口监视互斥（N5）</text>
+
+  <path d="M274 170 L300 170" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- DebugSession -->
+  <rect x="300" y="80" width="304" height="180" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="316" y="104" font-size="12" font-weight="600" fill="#1d4ed8">内核 DebugSession（gdb/MI）</text>
+  <text x="316" y="128" font-size="10.5" fill="#475569">stop reason · frame · PC/SP</text>
+  <text x="316" y="148" font-size="10.5" fill="#475569">registers · memory · breakpoints</text>
+  <text x="316" y="168" font-size="10.5" fill="#475569">step / step-in / step-out / run-to-line</text>
+  <text x="316" y="188" font-size="10.5" fill="#475569">每次写操作 → 审计（人 / agent）</text>
+  <text x="316" y="218" font-size="10.5" fill="#64748b">会话独占：同一工程 1 条</text>
+  <text x="316" y="240" font-size="9.5" fill="#94a3b8">openocd :3333 ↔ gdb</text>
+
+  <path d="M604 170 L628 170" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- Zephyr Reader -->
+  <rect x="628" y="80" width="328" height="180" rx="9" fill="#ecfdf5" stroke="#059669"/>
+  <text x="644" y="104" font-size="12" font-weight="600" fill="#047857">Zephyr Reader（只在 stopped 时采样）</text>
+  <text x="644" y="128" font-size="10.5" fill="#475569">ELF 符号：_kernel / struct k_thread / 迭代段</text>
+  <text x="644" y="148" font-size="10.5" fill="#475569">_kernel.cpus[0].current / ready_q.cache / idle_thread</text>
+  <text x="644" y="168" font-size="10.5" fill="#475569">线程表：_kernel.threads（需 THREAD_MONITOR）</text>
+  <text x="644" y="188" font-size="10.5" fill="#475569">就绪队列兜底：_kernel.ready_q.runq</text>
+  <text x="644" y="208" font-size="10.5" fill="#475569">栈水位：从 stack.start 向上数 0xAA</text>
+  <text x="644" y="228" font-size="10.5" fill="#475569">静态对象：_k_&lt;type&gt;_list_start/end</text>
+  <text x="644" y="250" font-size="9.5" fill="#94a3b8">四项 Kconfig 决定看到多少，见下一张图</text>
+
+  <!-- 页签分组 -->
+  <rect x="24" y="288" width="470" height="132" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="40" y="312" font-size="11.5" font-weight="600" fill="#0f172a">通用 GDB · 8 个</text>
+  <g font-size="10" fill="#475569">
+    <rect x="40" y="324" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="89" y="341" text-anchor="middle">调用栈</text>
+    <rect x="150" y="324" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="199" y="341" text-anchor="middle">变量</text>
+    <rect x="260" y="324" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="309" y="341" text-anchor="middle">寄存器</text>
+    <rect x="370" y="324" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="419" y="341" text-anchor="middle">断点</text>
+    <rect x="40" y="358" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="89" y="375" text-anchor="middle">监视</text>
+    <rect x="150" y="358" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="199" y="375" text-anchor="middle">源码</text>
+    <rect x="260" y="358" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="309" y="375" text-anchor="middle">内存</text>
+    <rect x="370" y="358" width="98" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="419" y="375" text-anchor="middle">反汇编</text>
+  </g>
+  <text x="40" y="404" font-size="9.5" fill="#94a3b8">外设页只在芯片包声明 SVD 时出现；F411 本轮没有 → 12 个页签</text>
+
+  <rect x="506" y="288" width="210" height="132" rx="9" fill="#ecfdf5" stroke="#059669"/>
+  <text x="522" y="312" font-size="11.5" font-weight="600" fill="#047857">Zephyr 专属 · 2 个</text>
+  <rect x="522" y="324" width="178" height="26" rx="5" fill="#ffffff" stroke="#a7f3d0"/><text x="601" y="341" font-size="10" fill="#047857" text-anchor="middle">Zephyr（内核 + 线程 + 对象）</text>
+  <rect x="522" y="358" width="178" height="26" rx="5" fill="#ffffff" stroke="#a7f3d0"/><text x="601" y="375" font-size="10" fill="#047857" text-anchor="middle">RTOS 栈（0xAA 水位）</text>
+  <text x="522" y="404" font-size="9.5" fill="#94a3b8">只对 west / Zephyr 的 ELF 出现</text>
+
+  <rect x="728" y="288" width="228" height="132" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="744" y="312" font-size="11.5" font-weight="600" fill="#0f172a">证据 · 2 个</text>
+  <rect x="744" y="324" width="96" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="792" y="341" font-size="10" fill="#475569" text-anchor="middle">审计</text>
+  <rect x="852" y="324" width="96" height="26" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="900" y="341" font-size="10" fill="#475569" text-anchor="middle">输出</text>
+  <text x="744" y="378" font-size="9.5" fill="#94a3b8">断点增删 / 内存与寄存器写</text>
+  <text x="744" y="396" font-size="9.5" fill="#94a3b8">都落 .work/debug-audit.jsonl</text>
+
+  <!-- 两条底线 -->
+  <rect x="24" y="436" width="932" height="62" rx="9" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="40" y="460" font-size="11" fill="#0f172a"><tspan font-weight="600">停住才有快照</tspan>　所有页签的数据都来自最近一次 stop；运行中 Zephyr 页签显示「加载中… 或目标未停止」</text>
+  <text x="40" y="482" font-size="10.5" fill="#64748b">读内核结构必须是同一时刻的一致快照，所以在跑的时候不采样，也不显示上一帧的旧值</text>
+
+  <rect x="24" y="508" width="932" height="62" rx="9" fill="#fff7ed" stroke="#f59e0b"/>
+  <text x="40" y="532" font-size="11" fill="#0f172a"><tspan font-weight="600">独占</tspan>　同一工程只允许一条调试会话；串口监视开着、闭环在跑时，点「开始调试」会直接报占用者</text>
+  <text x="40" y="554" font-size="10.5" fill="#92400e">本轮实机就撞到：串口监视占着 COM10 → 调试会话拒绝建立；先在串口页签关闭监视，再开会话</text>
+</svg>

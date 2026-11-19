@@ -1,0 +1,177 @@
+/**
+ * 布局 store —— DSH `ctx.layout` 的同名对应物（§15.2）。
+ *
+ * 管三件事：**三列宽度、折叠态、当前 Tab**（外加字号缩放）。
+ * 全部持久化到 `localStorage["elab.layout"]`，刷新后原样回来。
+ *
+ * 两条纪律：
+ *  ① 宽度一律**钳位**（clamp）。用户把窗口拖到 1200px 再把左列拖到 520px，
+ *     若不做钳位，中列会被挤成 0 宽 —— 界面看起来"坏了"，其实是算术溢出。
+ *  ② 单列极限值按视口动态算（`maxFor`），而不是硬编码死值。
+ */
+
+import { useSyncExternalStore } from "react";
+
+export type RailId = "projects" | "evidence";
+
+/** 工作区持久化合法值：静态各页 + 统一「工具」页。
+ *  ★ 第一版是每工具一页（`tool:<name>`），实测 7 个 Tab 挤爆右列，
+ *    已收敛为单一 "tools" 页（workspaces.ts 二次收敛）——
+ *    旧持久化值不能把人带到不存在的界面，sanitize 里迁移映射到 "tools"。
+ *  ★ Kharon 的三页（dash / matrix / west）与协议页（modbus）也在此列：
+ *    漏掉它们的症状很隐蔽 —— 停在「矩阵」刷新一下就被弹回「构建」，
+ *    看起来像"这页记不住"，实则是持久化白名单把值吃掉了。
+ *    真正"当前工程没有这一页"的兜底在 App 的越界 effect 里（按 profile +
+ *    archetype 算），不在这一层做工程相关的判断。 */
+const WS_IDS = new Set(["build", "flash", "serial", "tools", "debug",
+                        "dash", "matrix", "west", "modbus"]);
+
+function isWs(v: unknown): boolean {
+  return typeof v === "string" && WS_IDS.has(v);
+}
+
+export interface LayoutState {
+  /** 结构版本号 —— 将来改字段形状时用它做迁移，避免读到旧结构直接崩 */
+  v: 1;
+  /** 左列宽（px）。中列吃剩余空间，故不存。 */
+  projects: number;
+  /** 右列宽（px） */
+  evidence: number;
+  collapsed: { projects: boolean; evidence: boolean };
+  /** 当前工作区（工作区化后 Tab 升级为一级导航；旧字段名 tab 已废弃） */
+  ws: string;
+  /** 全局字号缩放（§15.4 规则 3），一处控制全部 --elab-fs-* */
+  fontScale: number;
+}
+
+const KEY = "elab.layout";
+
+const DEFAULT: LayoutState = {
+  v: 1,
+  projects: 268,
+  evidence: 470,
+  collapsed: { projects: false, evidence: false },
+  ws: "build",
+  fontScale: 1,
+};
+
+export const LIMITS = {
+  projects: { min: 176, max: 480 },
+  evidence: { min: 300, max: 900 },
+  fontScale: { min: 0.85, max: 1.4 },
+} as const;
+
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, n));
+}
+
+/**
+ * 单列允许的最大宽度 = 视口宽 - 另一列 - 中列最小宽度(360) - 拖拽条(2×6)。
+ * 这样无论窗口多小，"中列至少 360px"始终成立。
+ */
+export function maxFor(rail: RailId, s: LayoutState): number {
+  const vw = typeof window === "undefined" ? 1440 : window.innerWidth;
+  const other = rail === "projects" ? s.evidence : s.projects;
+  const otherCollapsed = rail === "projects" ? s.collapsed.evidence : s.collapsed.projects;
+  const reserve = 360 + 12 + (otherCollapsed ? 0 : other);
+  return Math.max(LIMITS[rail].min, Math.min(LIMITS[rail].max, vw - reserve));
+}
+
+function sanitize(raw: unknown): LayoutState {
+  if (!raw || typeof raw !== "object") return { ...DEFAULT };
+  const o = raw as Partial<LayoutState> & { collapsed?: Partial<LayoutState["collapsed"]> };
+  if (o.v !== 1) return { ...DEFAULT };
+  const num = (x: unknown, d: number) => (typeof x === "number" && Number.isFinite(x) ? x : d);
+  const bool = (x: unknown, d: boolean) => (typeof x === "boolean" ? x : d);
+  // 旧版存的是 tab（枚举），新版是 ws（工作区 id）。两代脏值都迁移：
+  //   "ota" / "tool:<name>"（第一版每工具一页）→ 统一 "tools" 工具页。
+  const legacyWs = (x: unknown): string | null => {
+    if (typeof x !== "string") return null;
+    if (isWs(x)) return x;
+    if (x === "ota" || x.startsWith("tool:")) return "tools";
+    return null;
+  };
+  const ws = legacyWs(o.ws) ?? legacyWs((o as { tab?: unknown }).tab) ?? DEFAULT.ws;
+  return {
+    v: 1,
+    projects: clamp(num(o.projects, DEFAULT.projects), LIMITS.projects.min, LIMITS.projects.max),
+    evidence: clamp(num(o.evidence, DEFAULT.evidence), LIMITS.evidence.min, LIMITS.evidence.max),
+    collapsed: {
+      projects: bool(o.collapsed?.projects, false),
+      evidence: bool(o.collapsed?.evidence, false),
+    },
+    ws,
+    fontScale: clamp(num(o.fontScale, 1), LIMITS.fontScale.min, LIMITS.fontScale.max),
+  };
+}
+
+function load(): LayoutState {
+  try {
+    const s = localStorage.getItem(KEY);
+    return s ? sanitize(JSON.parse(s)) : { ...DEFAULT };
+  } catch {
+    return { ...DEFAULT };
+  }
+}
+
+let state: LayoutState = load();
+const listeners = new Set<() => void>();
+
+function persist(): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    /* 忽略 */
+  }
+}
+
+/** 字号缩放走 CSS 变量，不改任何组件代码（§15.4 规则 3） */
+function applyFontScale(): void {
+  document.documentElement.style.setProperty("--elab-font-scale", String(state.fontScale));
+}
+
+function commit(next: LayoutState): void {
+  if (next === state) return;
+  state = next;
+  persist();
+  applyFontScale();
+  for (const l of listeners) l();
+}
+
+// 首屏：把持久化的字号挂上去（index.html 只管主题，不管字号）
+applyFontScale();
+
+export function setWidth(rail: RailId, px: number): void {
+  const v = clamp(Math.round(px), LIMITS[rail].min, maxFor(rail, state));
+  if (state[rail] === v) return;
+  commit({ ...state, [rail]: v });
+}
+
+export function toggleRail(rail: RailId): void {
+  commit({ ...state, collapsed: { ...state.collapsed, [rail]: !state.collapsed[rail] } });
+}
+
+export function setWorkspace(ws: string): void {
+  if (state.ws === ws) return;
+  commit({ ...state, ws });
+}
+
+export function setFontScale(n: number): void {
+  const v = clamp(Math.round(n * 100) / 100, LIMITS.fontScale.min, LIMITS.fontScale.max);
+  if (state.fontScale === v) return;
+  commit({ ...state, fontScale: v });
+}
+
+export function subscribeLayout(l: () => void): () => void {
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
+
+/** 返回稳定引用（只有 commit 时换新对象），满足 uSES */
+export function getLayout(): LayoutState {
+  return state;
+}
+
+export function useLayout(): LayoutState {
+  return useSyncExternalStore(subscribeLayout, getLayout, getLayout);
+}

@@ -1,0 +1,3 @@
+name: elab_app_common
+build:
+  cmake: .

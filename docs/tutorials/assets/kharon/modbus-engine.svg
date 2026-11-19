@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="980" height="470" fill="#fbfcfe"/>
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">同一个从站，两套引擎：换掉的是中间四层，最后一层一个字没改</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">寄存器表（地址 → 含义）是业务，两边必须一致；CRC / 定界 / 收发缓冲是协议栈，换了就该扔掉</text>
+
+  <!-- 左：classic -->
+  <rect x="24" y="70" width="452" height="330" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+  <text x="40" y="94" font-size="12" font-weight="600" fill="#475569">classic（手写引擎：modbus_slave.c 514 行 + uart_dma.c 380 行）</text>
+
+  <rect x="44" y="108" width="412" height="46" rx="7" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="56" y="128" font-size="11" font-weight="600" fill="#334155">USART1 + 循环 DMA（CIRC，256 B）</text>
+  <text x="56" y="144" font-size="9.5" fill="#64748b">uart_dma.c：DMA 写头、CPU 追尾；HT/TC 中断只表示“交了一批”</text>
+
+  <path d="M250 154 L250 172" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#m1)"/>
+
+  <rect x="44" y="172" width="412" height="46" rx="7" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="56" y="192" font-size="11" font-weight="600" fill="#334155">静默定界（20 ms IDLE 当提示）</text>
+  <text x="56" y="208" font-size="9.5" fill="#64748b">为什么不是规范的 3.5 字符：115200 下 1.75 ms 会被 USB 分包切碎</text>
+
+  <path d="M250 218 L250 236" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#m1)"/>
+
+  <rect x="44" y="236" width="412" height="46" rx="7" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="56" y="256" font-size="11" font-weight="600" fill="#334155">手写 CRC16 + 功能码 + 异常码 + TX 软件乒乓</text>
+  <text x="56" y="272" font-size="9.5" fill="#64748b">modbus_slave.c：自己算 CRC、自己组应答、自己挑发送缓冲</text>
+
+  <path d="M250 282 L250 300" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#m1)"/>
+
+  <rect x="44" y="300" width="412" height="72" rx="7" fill="#ecfdf5" stroke="#6ee7b7"/>
+  <text x="56" y="322" font-size="11" font-weight="600" fill="#047857">寄存器表（holding[] / coils[] / scratch[]）</text>
+  <text x="56" y="340" font-size="9.5" fill="#065f46">0x0000 device_id · 0x0010 LED · 0x0110..117 scratch · 0x0100..109 DMA 仪表盘</text>
+  <text x="56" y="358" font-size="9.5" fill="#047857">★ 这一层是业务契约，迁移时必须逐地址对齐</text>
+
+  <!-- 右：zephyr -->
+  <rect x="504" y="70" width="452" height="330" rx="10" fill="#ffffff" stroke="#2563eb"/>
+  <text x="520" y="94" font-size="12" font-weight="600" fill="#1d4ed8">Zephyr（全用子系统：应用侧 310 行，其中协议代码 0 行）</text>
+
+  <rect x="524" y="108" width="412" height="46" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="536" y="128" font-size="11" font-weight="600" fill="#1e40af">USART1 中断（dts 里的 modbus0 子节点）</text>
+  <text x="536" y="144" font-size="9.5" fill="#3b82f6">overlay 两行：compatible = "zephyr,modbus-serial"</text>
+
+  <path d="M730 154 L730 172" stroke="#2563eb" stroke-width="1.5" marker-end="url(#m1)"/>
+
+  <rect x="524" y="172" width="412" height="46" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="536" y="192" font-size="11" font-weight="600" fill="#1e40af">subsys/modbus/modbus_serial.c</text>
+  <text x="536" y="208" font-size="9.5" fill="#3b82f6">收 / 发 / 帧边界 / CRC 校验，全在子系统里（Zephyr 上游维护）</text>
+
+  <path d="M730 218 L730 236" stroke="#2563eb" stroke-width="1.5" marker-end="url(#m1)"/>
+
+  <rect x="524" y="236" width="412" height="46" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="536" y="256" font-size="11" font-weight="600" fill="#1e40af">modbus_server.c：功能码分发 + 异常码</text>
+  <text x="536" y="272" font-size="9.5" fill="#3b82f6">FC01/02/03/04/05/06/15/16 已实现，未实现的功能码自动回 01</text>
+
+  <path d="M730 282 L730 300" stroke="#2563eb" stroke-width="1.5" marker-end="url(#m1)"/>
+
+  <rect x="524" y="300" width="412" height="72" rx="7" fill="#ecfdf5" stroke="#6ee7b7"/>
+  <text x="536" y="322" font-size="11" font-weight="600" fill="#047857">寄存器表（六个回调 + 一个 switch）</text>
+  <text x="536" y="340" font-size="9.5" fill="#065f46">holding_reg_rd / _wr · coil_rd / _wr · discrete_input_rd · input_reg_rd</text>
+  <text x="536" y="358" font-size="9.5" fill="#047857">★ 地址与语义与左边逐条对齐（19 点，见正文 §4 对照表）</text>
+
+  <!-- 底部结论 -->
+  <rect x="24" y="420" width="932" height="34" rx="7" fill="#fffbeb" stroke="#fcd34d"/>
+  <text x="40" y="442" font-size="10.5" fill="#92400e">换成 Zephyr 之后，从站固件里剩下的全是「哪个地址是什么意思」——协议细节不再是你的维护成本，也不再是你的 bug 来源。</text>
+</svg>

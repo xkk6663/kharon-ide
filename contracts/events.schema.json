@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elab.local/contracts/events.schema.json",
+  "title": "ELAB Cockpit 事件契约（唯一事实源）",
+  "description": "SSE / 事件日志的 topic 与信封字段。修改后运行 node scripts/generate-contracts.mjs，生成物由 tests/contract 门禁校验。",
+  "version": 1,
+  "envelope": {
+    "ts": { "type": "number", "required": true, "note": "Unix epoch 秒（ms 精度）；不保证单调" },
+    "run": { "type": "string", "required": false, "note": "run id；调试/系统事件可能没有" },
+    "topic": { "type": "string", "required": true },
+    "seq": { "type": "integer", "required": true, "note": "run 内全局单调，重放游标" },
+    "step": { "type": "string", "required": false, "note": "产生该事件的步骤" }
+  },
+  "topics": [
+    { "topic": "run/start", "scope": "run", "delivery": "log" },
+    { "topic": "run/step-enter", "scope": "run", "delivery": "log" },
+    { "topic": "run/step-exit", "scope": "run", "delivery": "log" },
+    { "topic": "run/end", "scope": "run", "delivery": "log" },
+    { "topic": "run/cancel", "scope": "run", "delivery": "log" },
+    { "topic": "proc/stdout", "scope": "proc", "delivery": "log" },
+    { "topic": "proc/stderr", "scope": "proc", "delivery": "log" },
+    { "topic": "proc/stdout-batch", "scope": "proc", "delivery": "log" },
+    { "topic": "proc/exit", "scope": "proc", "delivery": "log" },
+    { "topic": "serial/open", "scope": "serial", "delivery": "log" },
+    { "topic": "serial/line", "scope": "serial", "delivery": "log" },
+    { "topic": "serial/close", "scope": "serial", "delivery": "log" },
+    { "topic": "serial/error", "scope": "serial", "delivery": "log" },
+    { "topic": "serial/closed-loop", "scope": "serial", "delivery": "log" },
+    { "topic": "debug/opened", "scope": "debug", "delivery": "log" },
+    { "topic": "debug/state", "scope": "debug", "delivery": "log" },
+    { "topic": "debug/stop", "scope": "debug", "delivery": "log" },
+    { "topic": "debug/breakpoint", "scope": "debug", "delivery": "log" },
+    { "topic": "debug/output", "scope": "debug", "delivery": "log" },
+    { "topic": "debug/error", "scope": "debug", "delivery": "log" },
+    { "topic": "debug/closed", "scope": "debug", "delivery": "log" },
+    { "topic": "stream/overrun", "scope": "stream", "delivery": "synthetic" },
+    { "topic": "stream/closed", "scope": "stream", "delivery": "control" }
+  ]
+}

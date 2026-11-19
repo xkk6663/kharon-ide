@@ -1,0 +1,258 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-3);
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  padding: 2px;
+}
+.wrap > * {
+  flex: 0 0 auto;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+}
+.barLabel {
+  font-size: var(--elab-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--elab-fg-muted);
+}
+.hint {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 46ch;
+  white-space: nowrap;
+}
+/* 三形态 chip（拓扑 / 应用形态）：纯展示，事实仍来自 /api/west 快照 */
+.chip {
+  font-size: var(--elab-fs-xs);
+  font-family: var(--elab-font-mono);
+  padding: 1px 8px;
+  border: 1px solid var(--elab-border);
+  border-radius: 999px;
+  color: var(--elab-fg-muted);
+  background: var(--elab-bg-raised);
+  white-space: nowrap;
+}
+.spacer {
+  flex: 1 1 auto;
+}
+
+.err {
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-danger, #c0392b);
+  border-radius: var(--elab-radius);
+  color: var(--elab-danger, #c0392b);
+  font-size: var(--elab-fs-xs);
+}
+
+.card {
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-surface);
+  overflow: hidden;
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  background: var(--elab-header-grad);
+}
+.cardTitle {
+  font-size: var(--elab-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--elab-fg-muted);
+}
+.badgeStrong {
+  font-size: var(--elab-fs-xs);
+  font-weight: 700;
+  color: var(--elab-fg);
+  font-variant-numeric: tabular-nums;
+}
+.badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--elab-border-strong);
+  border-radius: 3px;
+  color: var(--elab-fg-muted);
+}
+.badgeDim {
+  font-size: 10px;
+  color: var(--elab-fg-faint);
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.badgeWarn {
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--elab-warning, #b7791f);
+  border-radius: 3px;
+  color: var(--elab-warning, #b7791f);
+}
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-muted);
+  cursor: pointer;
+}
+
+/* 模块表可能 70 行：给个上限，别把下面几块卡片顶出屏幕 */
+.scroll {
+  max-height: 34vh;
+  overflow: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--elab-fs-xs);
+}
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  font-weight: 600;
+  color: var(--elab-fg-muted);
+  padding: 5px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  background: var(--elab-bg-surface);
+  white-space: nowrap;
+}
+.table td {
+  padding: 4px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+}
+.mono {
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  white-space: nowrap;
+}
+.path {
+  color: var(--elab-fg-faint);
+  max-width: 34ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ok {
+  color: var(--elab-success, #2e8b57);
+}
+.warn {
+  color: var(--elab-warning, #b7791f);
+}
+.missingRow td {
+  opacity: 0.72;
+}
+
+.foot {
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-top: 1px solid var(--elab-border);
+  font-size: 10px;
+  color: var(--elab-fg-faint);
+  line-height: 1.6;
+}
+
+.boardList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: var(--elab-space-2) var(--elab-space-3);
+  max-height: 22vh;
+  overflow: auto;
+}
+.boardChip,
+.boardChipLocal {
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--elab-border);
+  color: var(--elab-fg-faint);
+  white-space: nowrap;
+}
+/* 本仓用到的板必须一眼可辨：这是"我的板在 1206 条里的哪一行" */
+.boardChipLocal {
+  border-color: var(--elab-accent, #2f6fed);
+  color: var(--elab-accent, #2f6fed);
+  font-weight: 600;
+}
+
+.kvGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--elab-space-2) var(--elab-space-3);
+}
+.kvRow {
+  display: flex;
+  gap: var(--elab-space-2);
+  font-size: var(--elab-fs-xs);
+}
+.dim {
+  color: var(--elab-fg-faint);
+}
+
+.buildBlock {
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+}
+.buildBlock:last-child {
+  border-bottom: 0;
+}
+.buildHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--elab-space-2);
+  margin-bottom: 4px;
+  font-size: var(--elab-fs-xs);
+}
+/* 命令原文：允许横向滚动，绝不换行折断 —— "按钮即命令"要能整条复制对照 */
+.cmd {
+  font-family: var(--elab-font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  color: var(--elab-fg-muted);
+  background: var(--elab-bg-raised);
+  border: 1px solid var(--elab-border);
+  border-radius: 3px;
+  padding: 4px 6px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--elab-space-2);
+  margin-top: 4px;
+  font-size: 10px;
+}
+.dlKey {
+  color: var(--elab-fg-faint);
+}
+.dlVal {
+  color: var(--elab-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

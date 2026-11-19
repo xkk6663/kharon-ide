@@ -1,0 +1,595 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--elab-bg-surface);
+  border-right: 1px solid var(--elab-border);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;      /* 适配面板展开时整行换行铺满（.adaptBox 的 flex-basis:100%） */
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-3) var(--elab-space-3) var(--elab-space-2);
+  border-bottom: 1px solid var(--elab-border);
+  flex: 0 0 auto;
+  background: var(--elab-header-grad);
+}
+
+.headSpacer {
+  flex: 1 1 auto;
+}
+
+/* ── 一键适配（M5.6） ── */
+.adaptBtn {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-muted);
+  background: var(--elab-bg-raised);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  cursor: pointer;
+  transition: border-color 0.14s var(--elab-ease), color 0.14s var(--elab-ease),
+    background 0.14s var(--elab-ease);
+}
+.adaptBtn:hover {
+  border-color: var(--elab-accent);
+  color: var(--elab-fg-primary);
+  background: var(--elab-accent-bg);
+}
+
+.adaptBox {
+  flex: 1 0 100%;       /* 展开时换行占满标题栏宽度 */
+  min-width: 0;         /* 关键：允许窄轨道内收缩，否则按钮被挤出轨道右缘 */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--elab-space-2) 0 var(--elab-space-1);
+  border-top: 1px dashed var(--elab-border);
+}
+
+.adaptRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;      /* 窄轨道下按钮自动换行，不被挤出轨道右缘 */
+  gap: 6px;
+  min-width: 0;
+}
+.adaptRow > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.adaptResult {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adaptTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.adaptNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+}
+.adaptNameRow > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.adaptNameLabel {
+  flex: 0 0 auto;
+}
+
+.adaptNote {
+  font-size: var(--elab-fs-xs);
+  line-height: 1.6;
+  color: var(--elab-fg-muted);
+}
+
+.adaptErr {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: var(--elab-fs-xs);
+  line-height: 1.55;
+  color: var(--elab-status-fail);
+}
+
+.title {
+  font-size: var(--elab-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--elab-fg-muted);
+}
+
+.count {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--elab-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-2);
+}
+
+.note {
+  padding: var(--elab-space-3) var(--elab-space-2);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  line-height: 1.6;
+}
+
+/* ── 芯片组（二级树的第一层）──────────────────────────────────────
+   组头是**披露按钮**（不是卡片）：点击只折叠显示，不切换工程。
+   因此它有别于 .card 的视觉权重——更轻、更横、无 hover 抬升。 */
+.chipGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.chipGroupHead {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--elab-border);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.chipGroupHead:hover {
+  background: var(--elab-bg-raised);
+}
+.chipChevron {
+  flex: 0 0 auto;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+.chipGroupTitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--elab-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--elab-fg-muted);
+  text-transform: uppercase;
+}
+/* 板名/内核名可能很长（esp32s31_function_coreboard/esp32s31/hpcore），必须能截断 */
+.chipGroupSub {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+.chipGroupCount {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+.chipGroupBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-2);
+  padding-left: 4px;
+}
+
+/* 「实测」角标：提醒这个数字来自构建产物，不是芯片 yaml 的声明 */
+.measuredTag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--elab-border-strong);
+  border-radius: 3px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--elab-fg-faint);
+  vertical-align: 1px;
+}
+
+/* ── 工程卡片 ── */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-raised);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s var(--elab-ease), background 0.16s var(--elab-ease),
+    transform 0.14s var(--elab-ease), box-shadow 0.16s var(--elab-ease);
+}
+.card:hover:not(:disabled) {
+  border-color: var(--elab-border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--elab-shadow-sm);
+}
+.card:active:not(:disabled) {
+  transform: translateY(0);
+}
+.card:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sel {
+  border-color: var(--elab-accent);
+  background: var(--elab-accent-bg);
+  box-shadow: var(--elab-shadow-sm);
+  position: relative;
+}
+.sel::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--elab-accent-grad);
+}
+
+.row1 {
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+}
+
+.name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-sm);
+  font-weight: 600;
+  color: var(--elab-fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dotBuilt {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--elab-status-ok);
+}
+
+.row2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.row3 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-status-run);
+}
+
+/* ── C1 组合工程：boot 子工程嵌套展示（不与宿主并列）── */
+.combo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* 缩进 + 左缘连接线：视觉上"挂在宿主卡下面"，一眼读出从属而非平级。
+   连接线画在分组层（.bootGroup），收起时线随组头保留，归属关系不失联。 */
+.bootGroup {
+  margin-left: 18px;
+  padding-left: 10px;
+  border-left: 2px solid var(--elab-border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bootToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  padding: 1px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-muted);
+  cursor: pointer;
+  transition: color 0.14s var(--elab-ease);
+}
+.bootToggle:hover {
+  color: var(--elab-fg-primary);
+}
+.bootChevron {
+  flex: 0 0 auto;
+  width: 10px;
+  text-align: center;
+  line-height: 1;
+}
+.bootChild {
+  display: block;
+}
+.cardBoot {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background: var(--elab-bg-surface);
+}
+.bootLink {
+  flex: 0 0 auto;
+  color: var(--elab-fg-muted);
+  font-size: var(--elab-fs-sm);
+  line-height: 1;
+}
+
+/* ── OTA 关键信息行（C3 冻结台账直读）── */
+.rowOta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-muted);
+}
+.otaText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warnIcon {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+}
+
+.warnText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 芯片卡 ── */
+.chipBox {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--elab-border);
+  padding: var(--elab-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--elab-space-2);
+  background: var(--elab-bg-sunken);
+}
+
+.chipHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chipIcon {
+  color: var(--elab-fg-muted);
+  flex: 0 0 auto;
+}
+
+.chipId {
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-sm);
+  font-weight: 700;
+  color: var(--elab-fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 3px var(--elab-space-2);
+  margin: 0;
+  font-size: var(--elab-fs-xs);
+}
+.kv dt {
+  color: var(--elab-fg-faint);
+}
+.kv dd {
+  margin: 0;
+  color: var(--elab-fg-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--elab-font-mono);
+}
+
+.io {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: var(--elab-space-2);
+  border-top: 1px dashed var(--elab-border);
+}
+
+.ioRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--elab-fs-xs);
+}
+
+.ioIcon {
+  flex: 0 0 auto;
+  width: 12px;
+  color: var(--elab-fg-faint);
+}
+
+.ioLabel {
+  flex: 0 0 52px;
+  color: var(--elab-fg-faint);
+}
+
+.ioVal {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--elab-font-mono);
+  color: var(--elab-fg-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  line-height: 1.5;
+}
+
+/* ── 工程管理（「⋯」菜单：重命名 / 重新探测 / 移除）── */
+.cardWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.cardWrap > .card {
+  padding-right: 28px;      /* 给右上角「⋯」留位，不压住构建圆点 */
+}
+
+.moreBtn {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--elab-fg-faint);
+  font: inherit;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.14s var(--elab-ease), color 0.14s var(--elab-ease),
+    background 0.14s var(--elab-ease);
+}
+.cardWrap:hover .moreBtn,
+.moreBtnOn {
+  opacity: 1;
+}
+.moreBtn:hover,
+.moreBtnOn {
+  color: var(--elab-fg-primary);
+  background: var(--elab-bg-sunken);
+}
+
+.menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border: 1px solid var(--elab-border-strong);
+  border-radius: var(--elab-radius);
+  background: var(--elab-bg-surface);
+  box-shadow: var(--elab-shadow-sm);
+}
+
+.menuTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.menuName {
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  font-weight: 700;
+  color: var(--elab-fg-primary);
+}
+.menuRoot {
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menuRename {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-muted);
+}
+.menuRename > span {
+  flex: 0 0 auto;
+}
+.menuInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 6px;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-primary);
+  background: var(--elab-bg-raised);
+  border: 1px solid var(--elab-border);
+  border-radius: var(--elab-radius);
+  outline: none;
+}
+.menuInput:focus {
+  border-color: var(--elab-accent);
+}
+
+.menuRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}

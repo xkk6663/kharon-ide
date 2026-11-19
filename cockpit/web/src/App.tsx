@@ -1,0 +1,648 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  Capabilities,
+  ProjectsResponse,
+  SerialConsoleRecord,
+  StepId,
+} from "./api/types";
+import { api, assertSchema } from "./api/client";
+import { openRunStream, type StreamHandle } from "./events/sse";
+import { logs, type LogLine } from "./store/logs";
+import {
+  markStreamClosed,
+  reset as resetRun,
+  useRun,
+} from "./store/runStore";
+import { cycleTheme, useTheme, type ThemeMode } from "./store/themeStore";
+import { LIMITS, setFontScale, setWorkspace, useLayout } from "./store/layoutStore";
+import { AppFrame } from "./AppFrame";
+import { ProjectsRail } from "./rails/ProjectsRail";
+import { StageRail, fullLoopSteps } from "./rails/StageRail";
+import { EvidenceRail } from "./rails/EvidenceRail";
+import { PacksView } from "./rails/PacksView";
+import { Button } from "./primitives/Button";
+import { Pill } from "./primitives/Tag";
+import { Tooltip } from "./primitives/Tooltip";
+import { SegmentedTabs } from "./primitives/SegmentedTabs";
+import { workspacesFor } from "./workspaces";
+import { IconAlert, IconChip, IconMoon, IconMonitor, IconSun, IconTerminal } from "./icons";
+import s from "./App.module.css";
+
+function errmsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+const THEME_ICON: Record<ThemeMode, typeof IconSun> = {
+  light: IconSun,
+  dark: IconMoon,
+  system: IconMonitor,
+};
+
+/**
+ * 进入串口 Tab 时回填多少条服务端留档。
+ *
+ * ★ 60 条 ≈ 30 次手敲往返 —— 够看清"我刚做过什么"，又不至于把证据轨淹掉。
+ *   取多了还有一个坏处：留档是**会滚动**的（`MAX_RECORDS=2000`），
+ *   一次回填 2000 行会让人误以为"这些永远不会丢"，与本文件里反复强调的
+ *   那句"留档不是 state"相矛盾。
+ */
+const SERIAL_HISTORY_LIMIT = 60;
+
+/**
+ * console 留档的一条 → 证据轨的一行。
+ *
+ * ★ 前缀刻意与**实时**手写通道逐字一致（`TX →` / `←`）：同一件事不该因为
+ *   "这行是读回来的"就换一种写法。区别体现在**行首的时间戳**上 ——
+ *   实时行没有（它刚发生），留档行有（它可能发生在几小时前）。
+ */
+function serialRecToLine(rec: SerialConsoleRecord): { text: string; tone?: LogLine["tone"] } {
+  // `t` 形如 "2026-10-05T14:03:11"（服务端本地时间，已格式化好）
+  const stamp = String(rec.t || "").slice(11, 19) || "--:--:--";
+  if (rec.dir === "tx") {
+    return {
+      text: `✎ ${stamp}  TX → ${rec.text}`,
+      tone: rec.ok === false ? "alert" : "warn",
+    };
+  }
+  return { text: `   ${stamp}  ← ${rec.text}` };
+}
+
+export default function App() {
+  const layout = useLayout();
+  const theme = useTheme();
+  const run = useRun();
+
+  const [caps, setCaps] = useState<Capabilities | null>(null);
+  const [catalog, setCatalog] = useState<ProjectsResponse | null>(null);
+  const [fatal, setFatal] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [conn, setConn] = useState<"idle" | "connecting" | "open" | "reconnecting" | "dead">("idle");
+  /** 芯片适配包视图（市场 / 已安装；与 DSH 面板同形）。 */
+  const [packsOpen, setPacksOpen] = useState(false);
+  /** 正在切工作区模式（classic ⇄ Zephyr）：期间按钮不再收点击，避免连点切出半成品。 */
+  const [modeBusy, setModeBusy] = useState(false);
+  // ★ 工作区化瘦身（2026-10-08）：autoScroll → EvidenceRail 本地态；
+  //   clean/jobs → StageRail 本地态（随 onRunAll 上交）；波特率覆写与串口手写
+  //   → 串口工作区本地态。App 只留连接/目录/选中/run 编排 —— SSE 编排
+  //   （attach/backfill）是 C24/C26/C28 的正确性核心，**刻意不下沉**。
+
+  const streamRef = useRef<StreamHandle | null>(null);
+  const selectedRef = useRef("");
+  /** 已跟随过的 agent run id：只跟"新出现"的，不每一拍把人手动切走的视图拽回来。 */
+  const followedRunsRef = useRef<Set<string>>(new Set());
+  /**
+   * 跟随轮询的防重入标志。
+   *
+   * ★ 没有它时，只要一拍没在 2 s 内返回，下一拍照样发 —— 一旦内核变慢
+   *   （或请求挂住，虽然 `req()` 现在有 15 s 超时兜底），请求就会层层堆叠，
+   *   把浏览器连接池和内核线程一起占满。串口轮询早就有 `busyRef`，这里对齐。
+   */
+  const followBusyRef = useRef(false);
+
+  const closeStream = useCallback(() => {
+    streamRef.current?.close();
+    streamRef.current = null;
+    setConn("idle");
+  }, []);
+
+  /**
+   * 把一个 run 的完整事件流接进来。
+   *
+   * ★ **只用 SSE 一条路**（不区分"历史 / 实时"）：服务端 `_sse()` 的策略本就是
+   *   "先重放 `after_seq` 之后的存量，再跟读活队列"，所以历史 run 会走
+   *   重放分支并以 `stream/closed(run-finished)` 收尾，实时 run 会走队列分支。
+   *   两条路径在服务端已统一，前端就不必再分叉 —— 少一条分支就少一类竞态。
+   */
+  const attach = useCallback(
+    (runId: string) => {
+      closeStream();
+      setConn("connecting");
+      streamRef.current = openRunStream(runId, {
+        from: 0,
+        onState: (st) => setConn(st),
+        onClosed: (reason) => {
+          setConn("idle");
+          markStreamClosed(reason);
+          if (reason === "unknown-run") {
+            setNotice(`找不到 run ${runId} 的事件文件（可能已被清理）`);
+          }
+        },
+      });
+    },
+    [closeStream],
+  );
+
+  /**
+   * 回填**服务端**的串口留档（M3-b2）。
+   *
+   * ★ 时机是"每次清空本地缓冲之后、挂上 SSE 之前"，而不是"进串口 Tab 时"：
+   *   证据轨的 `LogView` 是纯追加渲染，**没有**"插入历史到顶部"的能力。
+   *   若等用户切到串口 Tab 再回填，那时实时 monitor 行可能已经在缓冲里了，
+   *   回填只会接在后面 —— 看起来就是**时间倒错**（旧命令排在新的设备输出之后）。
+   *   在清空之后立刻回填，顺序天然正确：留档在前、实时在后。
+   *
+   * ★ 失败**静默**：留档读不出来不该挡住跑闭环。串口本身能用才是要紧事 ——
+   *   这正是"console 日志不是 state"的另一面：它是锦上添花，不是判据。
+   */
+  const backfillSerial = useCallback(async (project: string) => {
+    if (!project) return;
+    try {
+      const r = await api.serialConsole(SERIAL_HISTORY_LIMIT);
+      // 留档是**全局**的（同一个端口可能被多个工程用过），按 `project` 过滤。
+      // 没写 project 的老记录一律保留 —— 宁可多显示一行，也别把历史吞掉。
+      const mine = r.records.filter((x) => !x.project || x.project === project);
+      if (!mine.length) return;
+      const more = r.count > r.records.length;
+      logs.history("serial", [
+        {
+          text:
+            `── 服务端串口留档：本工程 ${mine.length} 条` +
+            (more ? `（服务端共 ${r.count} 条，已载入最近 ${r.records.length} 条）` : "") +
+            " ──",
+        },
+        ...mine.map(serialRecToLine),
+        { text: "── 留档到此为止，以下是本次会话 ──" },
+      ]);
+    } catch {
+      /* 静默：见上 */
+    }
+  }, []);
+
+  const selectProject = useCallback(
+    async (name: string) => {
+      if (!name) return;
+      selectedRef.current = name;
+      setSelected(name);
+      closeStream();
+      resetRun();
+      logs.clearAll();
+      // ★ 必须 await：要保证留档先落进缓冲，attach() 的实时重放才接在它后面
+      await backfillSerial(name);
+      setNotice(null);
+      try {
+        const { runs, active } = await api.runs();
+        // ① 正在跑的优先（可能是 agent 在别处启动的）。
+        //    ★ 必须**按 started_at 取最新**，不能 `find()` 取第一个：
+        //      同一工程可能同时存在多条记录（服务端登记簿的历史条目、
+        //      或真并发两个 run），`find` 拿到的顺序不保证是"最新的"。
+        //      实测踩过：新起 build-only，界面却挂到上一条已结束的 doctor+build，
+        //      把旧日志当成本次现场 —— 正是"取到了更早那条"。
+        const live = active
+          .filter((a) => a.project === name && a.alive !== false)
+          .sort((a, b) => b.started_at - a.started_at)[0];
+        if (live) {
+          attach(live.run);
+          return;
+        }
+        // ② 没有在跑的 → 显示该工程最近一次的留档（这样页面刷新后仍能看到上次结果）
+        const mine = runs.filter((r) => r.project === name);
+        mine.sort((a, b) => b.started_at - a.started_at);
+        if (mine[0]) attach(mine[0].run);
+      } catch (e) {
+        setNotice(`读取运行列表失败：${errmsg(e)}`);
+      }
+    },
+    [attach, backfillSerial, closeStream],
+  );
+
+  const loadAll = useCallback(
+    async (autoSelect: boolean) => {
+      setLoading(true);
+      try {
+        const c = await api.capabilities();
+        // ★ 先校验契约版本再渲染。不做这一步的代价：后端改了字段名，前端
+        //   仍能画出界面但数据错位（内存表盘永远 0%），极难排查（§17 的教训）。
+        await assertSchema(c);
+        const p = await api.projects();
+        setCaps(c);
+        setCatalog(p);
+        setFatal(null);
+        if (autoSelect) {
+          const want =
+            selectedRef.current && p.projects.some((x) => x.name === selectedRef.current)
+              ? selectedRef.current
+              : (p.projects[0]?.name ?? "");
+          if (want) await selectProject(want);
+        }
+        return p;
+      } catch (e) {
+        setFatal(errmsg(e));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectProject],
+  );
+
+  useEffect(() => {
+    void loadAll(true);
+    return () => closeStream();
+  }, [loadAll, closeStream]);
+
+  /**
+   * agent 自动跟随工程（2s 轮询活动 run）。
+   *
+   * ★ 为什么需要：agent 通过工具在**别的工程**起跑时，本驾驶舱若停在旧工程，
+   *   阶段轨/日志画面与真实现场脱节 —— 用户看到的是"没在跑"。
+   *   只跟随**新出现**的 agent run（记 id），人工发起的 run 本来就在本地接管。
+   *   agent 与人共用同一把仲裁锁，所以同一时刻至多一条活动 run。
+   *
+   * ★ 只打 `/api/runs/active`：这条**不扫历史目录**，开销与历史条数无关。
+   *   早先打的是 `/api/runs`（全量列表），历史 run 一多，单次扫描就可能超过
+   *   2 s 轮询周期 —— 轮询本身成了负载源（实测 800 条约 2.1 s）。
+   */
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (followBusyRef.current) return;      // 上一拍还没回 → 跳过，别堆请求
+      followBusyRef.current = true;
+      void (async () => {
+        try {
+          const { active } = await api.runsActive();
+          const a = active.find((x) => x.alive !== false && x.actor === "agent");
+          if (!a || followedRunsRef.current.has(a.run)) return;
+          // 工程目录还没加载完 → 不记 id，下一拍照样会重试
+          if (!catalog?.projects.some((p) => p.name === a.project)) return;
+          followedRunsRef.current.add(a.run);
+          await selectProject(a.project);
+        } catch {
+          /* 轮询失败静默：不影响本地操作 */
+        } finally {
+          followBusyRef.current = false;
+        }
+      })();
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [catalog, selectProject]);
+
+  /**
+   * 启动一个 run。steps 不传 = 后端默认两步（仅 loadAll 兜底用）；
+   * 全闭环必须显式传步序（C30）。opts 由阶段轨「运行选项」折叠条随点击上交。
+   */
+  const startRun = useCallback(
+    async (steps?: string[], opts?: { clean?: boolean; jobs?: number | null }) => {
+      const project = selectedRef.current;
+      if (!project) return;
+      setBusy(true);
+      setNotice(null);
+      try {
+        const res = await api.startRun({
+          project,
+          steps: steps as StepId[] | undefined,
+          clean: opts?.clean || undefined,
+          jobs: opts?.jobs ?? undefined,
+        });
+        closeStream();
+        resetRun();
+        logs.clearAll();
+        // 与 selectProject 同理：留档先落，实时 monitor 行再接上去。
+        // 手写通道与闭环互斥（N5），所以这里的留档必定是**这次**跑之前的 —— 不会串味。
+        await backfillSerial(project);
+        attach(res.run);
+      } catch (e) {
+        setNotice(`启动失败：${errmsg(e)}`);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [attach, backfillSerial, closeStream],
+  );
+
+  const cancelRun = useCallback(async () => {
+    const rid = run.run;
+    if (!rid) return;
+    try {
+      const res = await api.cancelRun(rid);
+      if (!res.ok) setNotice(res.error || "取消失败");
+    } catch (e) {
+      setNotice(`取消失败：${errmsg(e)}`);
+    }
+  }, [run.run]);
+
+  const onSelect = useCallback(
+    (name: string) => {
+      void selectProject(name);
+    },
+    [selectProject],
+  );
+
+  /**
+   * 一键适配写入成功后的收尾（M5.6）：刷新目录（让新 `projects/<name>.yaml`
+   * 变成卡片）并选中新工程。顺序不能反 —— selectProject 不依赖 catalog，
+   * 但用户看到的列表必须已经包含新卡片。
+   */
+  const onAdapted = useCallback(
+    (name: string) => {
+      void (async () => {
+        await loadAll(false);
+        await selectProject(name);
+      })();
+    },
+    [loadAll, selectProject],
+  );
+
+  /**
+   * 工程改名 / 移除后的收尾（左侧「⋯」菜单）。
+   * ★ 顺序：先刷目录再选中 —— 改名要选**新名**；移除当前选中时要落到剩余第一个，
+   *   否则阶段轨会继续引用一个已不存在的工程（下次 run 直接 400）。
+   */
+  const onManaged = useCallback(
+    (res: {
+      action: "rename" | "remove" | "set_probe";
+      name: string;
+      new_name?: string;
+      probe?: string;
+    }) => {
+      void (async () => {
+        const p = await loadAll(false);
+        if (res.action === "rename" && res.new_name) {
+          await selectProject(res.new_name);
+          setNotice(`工程已重命名为 ${res.new_name}`);
+          return;
+        }
+        if (res.action === "set_probe") {
+          setNotice(`工程 ${res.name} 的探针已切换为 ${res.probe ?? ""}`);
+          return;
+        }
+        setNotice(`已移除工程 ${res.name}（projects/${res.name}.yaml.bak 可恢复）`);
+        if (selectedRef.current === res.name) {
+          const want = p?.projects[0]?.name;
+          if (want) await selectProject(want);
+        }
+      })();
+    },
+    [loadAll, selectProject],
+  );
+
+  /**
+   * 一键切工作区模式（classic ⇄ Zephyr）。
+   *
+   * ★ 这是**后端状态**，不是本地开关：后端会改自己的 `ELAB_HOST` /
+   *   `ELAB_PROFILE`，之后起的 run 子进程与调试会话都跟着换一套工具链。
+   *   所以顺序必须是"先让后端切成功 → 再清本地现场 → 重拉目录"，反了就会出现
+   *   "界面已经是 Zephyr、点跑闭环却还在用 classic 的 host"。
+   *
+   * ★ 清现场不能省：两个模式的**工程集合不一样**（classic 看全部，
+   *   Zephyr 只看 `archetype: zephyr`），旧选中在新模式下必然不存在；
+   *   接着 `loadAll(true)` 会落到新列表的第一个工程。
+   */
+  const onMode = useCallback(
+    async (mode: string) => {
+      const cur = caps?.meta?.profile?.id ?? "";
+      if (!mode || mode === cur || modeBusy) return;
+      if (run.status === "running") {
+        setNotice("有闭环正在跑 —— 等它结束再切模式（换模式会换工具链）");
+        return;
+      }
+      setModeBusy(true);
+      setNotice(null);
+      try {
+        const res = await api.setMode(mode);
+        selectedRef.current = "";
+        followedRunsRef.current.clear();
+        closeStream();
+        resetRun();
+        logs.clearAll();
+        await loadAll(true);
+        const label = res.profile?.label || mode;
+        const first = res.profile?.projects?.archetype?.length
+          ? `，只看 ${res.profile.projects.archetype.join(" / ")} 工程`
+          : "，全部工程可见";
+        setNotice(
+          `已切到 ${label} 模式${first}` +
+            (res.runs_dir_changed ? `；运行留档目录改为 ${res.runs_dir}` : ""),
+        );
+      } catch (e) {
+        setNotice(`切换模式失败：${errmsg(e)}`);
+      } finally {
+        setModeBusy(false);
+      }
+    },
+    [caps, modeBusy, run.status, closeStream, loadAll],
+  );
+
+  /**
+   * 工作区越界兜底：当前 Tab 在新模式/新工程下不存在时落回「构建」。
+   *
+   * ★ 典型场景：在 Zephyr 模式下停在「矩阵」，切回 classic —— 那张页从导航里
+   *   消失了（classic 没有 matrix 语义），而持久化的 `layout.ws` 还是 "matrix"。
+   *   只靠 `EvidenceRail` 的 `?? all[0]` 会"显示构建页、记住矩阵页"，下次切回
+   *   Zephyr 又莫名其妙跳走。这里把它落**实**。
+   */
+  useEffect(() => {
+    if (!catalog) return;
+    const card = catalog.projects.find((p) => p.name === selected) ?? null;
+    if (workspacesFor(card, caps).some((w) => w.id === layout.ws)) return;
+    setWorkspace("build");
+  }, [catalog, caps, selected, layout.ws]);
+
+  const card = catalog?.projects.find((p) => p.name === selected) ?? null;
+  const serialPort = card?.serial.port || caps?.serial.host_default || "";
+  const ThemeIcon = THEME_ICON[theme];
+  /**
+   * 顶栏模式开关的数据源 = 内核扫 `cockpit/profiles/*.yaml` 得出的模式表。
+   * ★ 只有一份清单时不渲染（单产品部署不该多一个永远只有一项的按钮）；
+   *   也不按 id 判断"谁是 Zephyr"—— 加第三个产品只需加一份 yaml。
+   */
+  const modes = caps?.meta?.profile?.modes ?? [];
+  const activeMode = caps?.meta?.profile?.id ?? caps?.meta?.profile?.name ?? "";
+
+  if (fatal) {
+    return (
+      <div className={s.fatal}>
+        <IconAlert className={s.fatalIcon} />
+        <h1 className={s.fatalTitle}>驾驶舱无法启动</h1>
+        <p className={s.fatalMsg}>{fatal}</p>
+        <pre className={s.fatalCmd}>python -m cockpit.server</pre>
+        <p className={s.fatalHint}>
+          后端与前端是同一份契约（<code>docs/ICD_cockpit_events.md</code>）。
+          上面这条错误要么是后端没起、要么是前后端契约版本不一致。
+        </p>
+        <Button variant="primary" onClick={() => void loadAll(true)}>
+          重试
+        </Button>
+      </div>
+    );
+  }
+
+  const header = (
+    <>
+      <span className={s.brand}>elab cockpit</span>
+      {modes.length > 1 ? (
+        <Tooltip
+          side="bottom"
+          tip={
+            modeBusy
+              ? "正在切换工作区…"
+              : run.status === "running"
+                ? "有闭环正在跑 —— 结束后可切换"
+                : "工作区模式：切换 = 换一套主机事实源 + 工程可见范围"
+          }
+        >
+          <span className={[s.modeSwitch, modeBusy ? s.modeBusy : ""].filter(Boolean).join(" ")}>
+            <SegmentedTabs
+              size="sm"
+              value={activeMode}
+              onChange={(id) => void onMode(id)}
+              tabs={modes.map((m) => ({
+                id: m.id,
+                label: m.label,
+                // host 文件缺失 = 这个模式在本机装配不全：置灰（仍可点，点了会给出原因）
+                dim: m.host_exists === false,
+                title:
+                  (m.desc ? `${m.label}：${m.desc}` : `切换到 ${m.label} 工作区`) +
+                  (m.host_exists === false ? `（主机文件缺失：${m.host}）` : ""),
+              }))}
+            />
+          </span>
+        </Tooltip>
+      ) : null}
+      <Pill tone={conn === "open" ? "green" : conn === "idle" ? "neutral" : conn === "dead" ? "red" : "blue"}>
+        {conn === "idle" ? "空闲"
+          : conn === "open" ? "已连接"
+          : conn === "dead" ? "事件流已断开"
+          : "连接中"}
+      </Pill>
+      {caps ? (
+        <Tooltip side="bottom" tip={`契约版本 ${caps.schema_version} · 根目录 ${caps.root}`}>
+          <span className={s.ver}>v{caps.cockpit.version}</span>
+        </Tooltip>
+      ) : null}
+      <span className={s.headerSpacer} />
+      <Tooltip side="bottom" tip="芯片适配包：市场搜索 / 已安装（一次只启用一套）">
+        <Button variant="toolbar" onClick={() => setPacksOpen(true)} aria-label="芯片适配包">
+          <IconChip />
+        </Button>
+      </Tooltip>
+      {caps ? (
+        <Tooltip
+          side="bottom"
+          tip={
+            caps.serial.available
+              ? `串口后端就绪（layer=${caps.serial.layer}）`
+              : (caps.serial.hint ?? "串口后端不可用")
+          }
+        >
+          <span className={s.serialChip}>
+            <IconTerminal className={s.serialIcon} />
+            {caps.serial.available ? `${caps.serial.ports.length} 个口` : "串口不可用"}
+          </span>
+        </Tooltip>
+      ) : null}
+      {/* ★ 顶栏的 tooltip 必须 side="bottom"：触发器贴着视口顶部，默认朝上开
+          会被 html/body/#root 的 overflow:hidden 裁掉，等于"提示永远不出现"。
+          实测就是这么发现的（hover 顶栏按钮时可见 tooltip 数为 0）。 */}
+      <Tooltip side="bottom" tip={`字号（当前 ${layout.fontScale.toFixed(2)}×）`}>
+        <span className={s.fontCtl}>
+          <button
+            type="button"
+            className={s.fontBtn}
+            onClick={() => setFontScale(layout.fontScale - 0.05)}
+            disabled={layout.fontScale <= LIMITS.fontScale.min + 1e-6}
+            aria-label="缩小字号"
+          >
+            A−
+          </button>
+          <button
+            type="button"
+            className={s.fontBtn}
+            onClick={() => setFontScale(layout.fontScale + 0.05)}
+            disabled={layout.fontScale >= LIMITS.fontScale.max - 1e-6}
+            aria-label="放大字号"
+          >
+            A+
+          </button>
+        </span>
+      </Tooltip>
+      <Tooltip side="bottom" tip={`主题：${theme}（点击循环 系统→亮→暗）`}>
+        <Button variant="toolbar" onClick={cycleTheme} aria-label="切换主题">
+          <ThemeIcon />
+        </Button>
+      </Tooltip>
+    </>
+  );
+
+  return (
+    <div className={s.shell}>
+      <AppFrame
+        header={header}
+        projects={
+          <ProjectsRail
+            cards={catalog?.projects ?? []}
+            selected={selected}
+            onSelect={onSelect}
+            caps={caps}
+            locked={run.status === "running"}
+            loading={loading}
+            onAdapted={onAdapted}
+            onManaged={onManaged}
+          />
+        }
+        stage={
+          <StageRail
+            card={card}
+            run={run}
+            caps={caps}
+            busy={busy}
+            onRunAll={(opts) => void startRun(fullLoopSteps(card, caps), opts)}
+            onRunSteps={(steps) => void startRun(steps)}
+            onCancel={() => void cancelRun()}
+            onRefresh={() => void loadAll(false)}
+          />
+        }
+        evidence={
+          <EvidenceRail
+            caps={caps}
+            card={card}
+            running={run.status === "running"}
+            onRunSteps={(steps: string[]) => void startRun(steps)}
+            serialProject={selected}
+            serialPort={serialPort}
+            ws={layout.ws}
+            onWs={setWorkspace}
+          />
+        }
+        compactSelector={
+          <select
+            className={s.select}
+            value={selected}
+            onChange={(e) => onSelect(e.currentTarget.value)}
+            aria-label="选择工程"
+          >
+            {(catalog?.projects ?? []).map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.name} · {p.chip}
+              </option>
+            ))}
+          </select>
+        }
+        projectsStripLabel={selected}
+      />
+
+      {packsOpen ? (
+        <PacksView
+          runActive={run.status === "running"}
+          onClose={() => setPacksOpen(false)}
+          onActivated={() => void loadAll(false)}
+        />
+      ) : null}
+
+      {notice ? (
+        <div className={s.notice} role="status">
+          <IconAlert className={s.noticeIcon} />
+          <span className={s.noticeText}>{notice}</span>
+          <button
+            type="button"
+            className={s.noticeClose}
+            onClick={() => setNotice(null)}
+            aria-label="关闭提示"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}

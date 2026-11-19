@@ -1,0 +1,158 @@
+[
+    {
+        "From":  "apps\\korvo_sys",
+        "To":  "apps\\esp32s31\\korvo_sys"
+    },
+    {
+        "From":  "apps\\korvo_apps",
+        "To":  "apps\\esp32s31\\korvo_apps"
+    },
+    {
+        "From":  "apps\\korvo_lab",
+        "To":  "apps\\esp32s31\\korvo_lab"
+    },
+    {
+        "From":  "apps\\korvo_periph",
+        "To":  "apps\\esp32s31\\korvo_periph"
+    },
+    {
+        "From":  "apps\\korvo_shell",
+        "To":  "apps\\esp32s31\\korvo_shell"
+    },
+    {
+        "From":  "apps\\korvo_nvs",
+        "To":  "apps\\esp32s31\\korvo_nvs"
+    },
+    {
+        "From":  "apps\\blinky-s3",
+        "To":  "apps\\esp32s3\\blinky-s3"
+    },
+    {
+        "From":  "apps\\input_btn",
+        "To":  "apps\\esp32s3\\input_btn"
+    },
+    {
+        "From":  "apps\\s3_wifi_portal",
+        "To":  "apps\\esp32s3\\s3_wifi_portal"
+    },
+    {
+        "From":  "apps\\korvo_wifi",
+        "To":  "apps\\esp32s3\\korvo_wifi"
+    },
+    {
+        "From":  "build-s3-ble",
+        "To":  "build\\_legacy\\build-s3-ble"
+    },
+    {
+        "From":  "build-s3-portal",
+        "To":  "build\\_legacy\\build-s3-portal"
+    },
+    {
+        "From":  "build-s3-sys",
+        "To":  "build\\_legacy\\build-s3-sys"
+    },
+    {
+        "From":  "build-s3-wifi",
+        "To":  "build\\_legacy\\build-s3-wifi"
+    },
+    {
+        "From":  "build-sdk-riscv",
+        "To":  "build\\_legacy\\build-sdk-riscv"
+    },
+    {
+        "From":  "zephyr-s31\\build",
+        "To":  "build\\_legacy\\zephyr-s31-build"
+    },
+    {
+        "From":  "zephyr-s31\\build-apps",
+        "To":  "build\\_legacy\\zephyr-s31-build-apps"
+    },
+    {
+        "From":  "zephyr-s31\\build-check-apps",
+        "To":  "build\\_legacy\\zephyr-s31-build-check-apps"
+    },
+    {
+        "From":  "zephyr-s31\\build-check-lab",
+        "To":  "build\\_legacy\\zephyr-s31-build-check-lab"
+    },
+    {
+        "From":  "zephyr-s31\\build-check-nvs",
+        "To":  "build\\_legacy\\zephyr-s31-build-check-nvs"
+    },
+    {
+        "From":  "zephyr-s31\\build-check-shell",
+        "To":  "build\\_legacy\\zephyr-s31-build-check-shell"
+    },
+    {
+        "From":  "zephyr-s31\\build-check-sys",
+        "To":  "build\\_legacy\\zephyr-s31-build-check-sys"
+    },
+    {
+        "From":  "zephyr-s31\\build-course-apps",
+        "To":  "build\\_legacy\\zephyr-s31-build-course-apps"
+    },
+    {
+        "From":  "zephyr-s31\\build-course-lab",
+        "To":  "build\\_legacy\\zephyr-s31-build-course-lab"
+    },
+    {
+        "From":  "zephyr-s31\\build-course-shell",
+        "To":  "build\\_legacy\\zephyr-s31-build-course-shell"
+    },
+    {
+        "From":  "zephyr-s31\\build-course-sys",
+        "To":  "build\\_legacy\\zephyr-s31-build-course-sys"
+    },
+    {
+        "From":  "zephyr-s31\\build-course-template",
+        "To":  "build\\_legacy\\zephyr-s31-build-course-template"
+    },
+    {
+        "From":  "zephyr-s31\\build-lab",
+        "To":  "build\\_legacy\\zephyr-s31-build-lab"
+    },
+    {
+        "From":  "zephyr-s31\\build-nvs",
+        "To":  "build\\_legacy\\zephyr-s31-build-nvs"
+    },
+    {
+        "From":  "zephyr-s31\\build-s3-apps",
+        "To":  "build\\_legacy\\zephyr-s31-build-s3-apps"
+    },
+    {
+        "From":  "zephyr-s31\\build-s3-hello",
+        "To":  "build\\_legacy\\zephyr-s31-build-s3-hello"
+    },
+    {
+        "From":  "zephyr-s31\\build-s3-sys",
+        "To":  "build\\_legacy\\zephyr-s31-build-s3-sys"
+    },
+    {
+        "From":  "zephyr-s31\\build-shell",
+        "To":  "build\\_legacy\\zephyr-s31-build-shell"
+    },
+    {
+        "From":  "zephyr-s31\\build-sys",
+        "To":  "build\\_legacy\\zephyr-s31-build-sys"
+    },
+    {
+        "From":  "apps\\korvo_apps\\build",
+        "To":  "build\\_legacy\\apps-korvo_apps-build"
+    },
+    {
+        "From":  "apps\\korvo_lab\\build",
+        "To":  "build\\_legacy\\apps-korvo_lab-build"
+    },
+    {
+        "From":  "apps\\korvo_periph\\build",
+        "To":  "build\\_legacy\\apps-korvo_periph-build"
+    },
+    {
+        "From":  "apps\\blinky-s3\\build",
+        "To":  "build\\_legacy\\apps-blinky-s3-build"
+    },
+    {
+        "From":  "apps\\input_btn\\build",
+        "To":  "build\\_legacy\\apps-input_btn-build"
+    }
+]

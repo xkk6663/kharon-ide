@@ -1,0 +1,32 @@
+# projects/kharon/korvo_sys_s3.yaml
+# 同一个 app、另一块板 —— 与 korvo_sys_s31 构成 matrix: korvo_sys
+
+name: korvo_sys_s3
+root: ${ELAB_ROOT}/applications/esp32s31/korvo_sys
+pack: zephyr/framework
+chip: esp32s3_devkitc
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ELAB_ROOT}/build/esp32s3/korvo_sys/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+  reconnect: { enabled: true, min_ms: 200, max_ms: 5000, max_attempts: 0 }
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30
+
+matrix: korvo_sys

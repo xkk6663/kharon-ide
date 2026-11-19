@@ -1,0 +1,25 @@
+# packs/official/zephyr/framework/chips/stm32f103_mini.yaml
+#
+# 本地自研板（vendor: others，SoC = stm32f103xe）→ target 是**两段**：
+#   <board>/<soc>
+# 这就是 board-as-chip 不能靠字符串拼接的原因：段数由 board.yml 决定。
+
+id: stm32f103_mini
+vendor: zephyr
+platform: framework
+part: STM32F103C8T6
+target: stm32f103_mini/stm32f103xe
+core_name: Cortex-M3
+
+serial:
+  baud: 115200
+
+debug:
+  gdb_key: gdb_zephyr_arm
+  addr2line_key: addr2line_zephyr_arm
+  openocd_key: openocd
+  openocd_config: applications/stm32f1/common/dap_link_openocd.cfg
+  device: STM32F103C8
+
+flash:
+  runner: openocd

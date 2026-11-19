@@ -1,0 +1,128 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--elab-bg-surface);
+  border-left: 1px solid var(--elab-border);
+}
+
+.head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+}
+
+.bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: 6px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+}
+
+/* 工具工作区的按钮行：★ flex-wrap 可换行 —— 工具数量不限，
+   永不横向溢出（顶栏单行 bar 溢出是"显示不全"断层的根因之一） */
+.toolRow {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: 6px var(--elab-space-3);
+  border-bottom: 1px solid var(--elab-border);
+  background: color-mix(in srgb, var(--elab-bg-hover) 35%, transparent);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.meta {
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.warn {
+  flex: 0 0 auto;
+  padding: 6px var(--elab-space-3);
+  font-size: var(--elab-fs-xs);
+  line-height: 1.5;
+  color: var(--elab-status-run);
+  background: color-mix(in srgb, var(--elab-status-run) 10%, transparent);
+  border-bottom: 1px solid var(--elab-border);
+}
+
+code {
+  font-family: var(--elab-font-mono);
+  font-size: 0.94em;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--elab-bg-hover);
+}
+
+/* ── 手动输入行 ── */
+.write {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--elab-space-2);
+  padding: var(--elab-space-2) var(--elab-space-3);
+  border-top: 1px solid var(--elab-border);
+  background: var(--elab-bg-surface);
+}
+
+.writeIcon {
+  flex: 0 0 auto;
+  width: 13px;
+  color: var(--elab-fg-faint);
+}
+
+.portTag {
+  flex: 0 0 auto;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  white-space: nowrap;
+}
+
+/* 波特率选择器（M3-b）：与 portTag 同排、同样式，但可交互 */
+.baud {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 4px;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg-faint);
+  background: var(--elab-bg-surface);
+  border: 1px solid var(--elab-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.baud:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 网络传输（M4）：host/port 输入框沿用 .baud 的尺寸，但光标是文本 */
+.netField {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 4px;
+  font-family: var(--elab-font-mono);
+  font-size: var(--elab-fs-xs);
+  color: var(--elab-fg);
+  background: var(--elab-bg-surface);
+  border: 1px solid var(--elab-border);
+  border-radius: 4px;
+}
+
+.netField:disabled {
+  opacity: 0.5;
+}

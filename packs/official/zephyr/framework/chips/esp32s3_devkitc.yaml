@@ -1,0 +1,29 @@
+# packs/official/zephyr/framework/chips/esp32s3_devkitc.yaml
+#
+# 多核板：target 是**三段** <board>/<soc>/<core>（procpu = 协议核，被 Zephyr 当主核）。
+
+id: esp32s3_devkitc
+vendor: zephyr
+platform: framework
+part: ESP32-S3
+target: esp32s3_devkitc/esp32s3/procpu
+core_name: Xtensa LX7
+
+serial:
+  baud: 115200
+
+debug:
+  gdb_key: gdb_zephyr_xtensa
+  addr2line_key: addr2line_zephyr_xtensa
+  # ★ ESP 系**不能**用 xpack 那份 openocd：它没有 esp32s3/s31 的 board 脚本
+  openocd_key: openocd_esp32
+  # ESP32 走 esptool 烧录，不用 openocd cfg
+  device: esp32s3
+
+flash:
+  # ★ runner 名 = runners.yaml 的 flash-runner（esp32，不是 esptool 的包名 esp）。
+  #   内核不猜：芯片包写错名，west 直接报 "does not support runner"（实测踩到）。
+  runner: esp32
+  # ★ 烧录口：S3 原生 USB-Serial-JTAG（VID 303A/PID 1001）按项目 serial.port
+  #   （auto 走选口规则）解析；runner 的 --esp-device 旗标归芯片包声明，内核不硬编码。
+  extra_args: ["--esp-device", "${serial_port}"]

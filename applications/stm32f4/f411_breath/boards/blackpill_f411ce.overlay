@@ -1,0 +1,45 @@
+/*
+ * 板级差异层（blackpill_f411ce）：
+ * 这块板的板级 dts 已经和手上硬件对上了（LED=PC13、KEY=PA0、控制台=USART1 PA9/PA10），
+ * 所以这里不做"加外设"，只做两件事：
+ *   1) 把控制台这一条 chosen 显式写出来 —— 它是"日志从哪个口出来"的唯一开关，值得在工程里留痕；
+ *   2) 把本工程用不到的板载外设关掉 —— 设备初始化少几个，也把"这块板默认开了什么"记录在案。
+ */
+
+/ {
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+	};
+};
+
+/* DAP-Link 的 CDC 串口：115200 8N1，与 PA9(TX)/PA10(RX) 的接线一致 */
+&usart1 {
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/* ---- 本工程不用的板载外设（关掉不等于板子坏了，只是这轮不初始化） ---- */
+&i2c1 {
+	status = "disabled";
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+&rtc {
+	status = "disabled";
+};
+
+&usbotg_fs {
+	status = "disabled";
+};
+
+&adc1 {
+	status = "disabled";
+};
+
+&timers4 {
+	status = "disabled";
+};

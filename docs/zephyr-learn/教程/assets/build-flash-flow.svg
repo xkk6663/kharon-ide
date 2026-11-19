@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" width="980" height="420" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="980" height="420" fill="#fbfcfe"/>
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">一次构建到哪里去了：应用目录 → 构建目录 → 产物 → 板子</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">当前仓库用 kharon/elab 入口；产物位置由工程 yaml 决定，不再靠“记住 west 的默认目录”</text>
+
+  <rect x="24" y="82" width="210" height="132" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="40" y="106" font-size="12" font-weight="600" fill="#1d4ed8">① 源码</text>
+  <text x="40" y="130" font-size="10" fill="#475569">applications/stm32f4/</text>
+  <text x="40" y="148" font-size="10" fill="#475569">　f411_breath/</text>
+  <text x="40" y="172" font-size="10" fill="#475569">CMakeLists.txt · prj.conf</text>
+  <text x="40" y="190" font-size="10" fill="#475569">src/ · boards/（可选）</text>
+  <text x="40" y="210" font-size="9" fill="#94a3b8">目录名与 projects/*.yaml 的 name 一致</text>
+
+  <path d="M234 148 L258 148" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="258" y="82" width="210" height="132" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="274" y="106" font-size="12" font-weight="600" fill="#1d4ed8">② 构建入口</text>
+  <text x="274" y="130" font-size="10" fill="#475569">kharon build -p f411_breath</text>
+  <text x="274" y="148" font-size="10" fill="#475569">＝ elab build -p …（同一内核）</text>
+  <text x="274" y="172" font-size="10" fill="#475569">工具链/环境由 host yaml +</text>
+  <text x="274" y="190" font-size="10" fill="#475569">provider 决定</text>
+  <text x="274" y="210" font-size="9" fill="#94a3b8">不再手写 CROSS_COMPILE</text>
+
+  <path d="M468 148 L492 148" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="492" y="82" width="260" height="132" rx="9" fill="#ecfdf5" stroke="#059669"/>
+  <text x="508" y="106" font-size="12" font-weight="600" fill="#047857">③ 构建目录（唯一事实）</text>
+  <text x="508" y="130" font-size="9.5" fill="#475569">build/stm32f4/f411_breath/default/</text>
+  <text x="508" y="150" font-size="9.5" fill="#475569">├─ zephyr/zephyr.elf（调试）</text>
+  <text x="508" y="168" font-size="9.5" fill="#475569">├─ zephyr/zephyr.bin / .hex（烧录）</text>
+  <text x="508" y="186" font-size="9.5" fill="#475569">├─ zephyr/.config（Kconfig 事实）</text>
+  <text x="508" y="204" font-size="9.5" fill="#475569">└─ compile_commands.json</text>
+
+  <path d="M752 148 L776 148" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="776" y="82" width="180" height="132" rx="9" fill="#ffffff" stroke="#2563eb"/>
+  <text x="792" y="106" font-size="12" font-weight="600" fill="#1d4ed8">④ 板子 / 证据</text>
+  <text x="792" y="130" font-size="10" fill="#475569">flash → DAP-Link / AT-Link</text>
+  <text x="792" y="148" font-size="10" fill="#475569">serial → 1Hz [alive]</text>
+  <text x="792" y="172" font-size="10" fill="#475569">debug → main / 断点</text>
+  <text x="792" y="194" font-size="9" fill="#94a3b8">灯要人眼确认，toggles 给 agent</text>
+
+  <rect x="24" y="240" width="300" height="142" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="40" y="264" font-size="11.5" font-weight="600" fill="#0f172a">规则 1：产物跟着工程走</text>
+  <text x="40" y="286" font-size="10" fill="#475569">projects/kharon/f411_breath.yaml 的</text>
+  <text x="40" y="304" font-size="10" fill="#475569">root / chip / build 字段决定：</text>
+  <text x="40" y="326" font-size="10" fill="#475569">应用从哪读、板子用哪个、产物落哪</text>
+  <text x="40" y="352" font-size="9.5" fill="#94a3b8">换工程只改 yaml，不改脚本</text>
+
+  <rect x="340" y="240" width="300" height="142" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="356" y="264" font-size="11.5" font-weight="600" fill="#0f172a">规则 2：别裸敲 west build</text>
+  <text x="356" y="286" font-size="10" fill="#475569">裸敲会落默认 build/，与工程目录</text>
+  <text x="356" y="304" font-size="10" fill="#475569">不一致，下一次闭环找不到 ELF。</text>
+  <text x="356" y="326" font-size="10" fill="#475569">要手敲就显式带 -d：</text>
+  <text x="356" y="344" font-size="9.5" fill="#047857">west build -d build/…/default</text>
+
+  <rect x="656" y="240" width="300" height="142" rx="9" fill="#fff7ed" stroke="#f59e0b"/>
+  <text x="672" y="264" font-size="11.5" font-weight="600" fill="#b45309">规则 3：旧目录先处理</text>
+  <text x="672" y="286" font-size="10" fill="#475569">仓库重构后，旧 apps/ 路径的 build</text>
+  <text x="672" y="304" font-size="10" fill="#475569">目录会让 west 拒绝继续：</text>
+  <text x="672" y="322" font-size="9.5" fill="#b45309">FATAL ERROR: refusing to proceed</text>
+  <text x="672" y="344" font-size="9.5" fill="#475569">挪走旧目录，或 --pristine 原地重建</text>
+  <text x="672" y="364" font-size="9" fill="#94a3b8">见 tutorials/14 §8.3</text>
+
+  <text x="24" y="404" font-size="9.5" fill="#94a3b8">口径：F411 Black Pill · build/stm32f4/f411_breath/default · 2026-11-19 实机</text>
+</svg>

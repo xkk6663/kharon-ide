@@ -1,0 +1,519 @@
+{
+  "_meta": {
+    "source": "GET /api/capabilities",
+    "project": "f411_breath"
+  },
+  "shape": {
+    "active_runs": [],
+    "cockpit": {
+      "dist": "<str>",
+      "dist_ready": "<bool>",
+      "proc_batch_s": "<num>",
+      "sse_heartbeat_s": "<num>",
+      "version": "<str>"
+    },
+    "meta": {
+      "channels": [
+        "<str>"
+      ],
+      "debug": {
+        "actions": [
+          "<str>"
+        ],
+        "available": "<bool>",
+        "breakpoint_kinds": [
+          "<str>"
+        ],
+        "error_codes": [
+          "<str>"
+        ],
+        "exclusive_with": [
+          "<str>"
+        ],
+        "features": [
+          "<str>"
+        ],
+        "formats": [
+          "<str>"
+        ],
+        "lease": {
+          "default_s": "<num>",
+          "max_s": "<num>",
+          "min_s": "<num>"
+        },
+        "limits": {
+          "audit_records": "<num>",
+          "disasm_max": "<num>",
+          "memory_read_max": "<num>",
+          "register_batch_max": "<num>",
+          "source_bytes_max": "<num>",
+          "source_lines_max": "<num>",
+          "variables_depth": "<num>",
+          "watch_max": "<num>"
+        },
+        "max_sessions": "<num>",
+        "on_close": {
+          "method": "<str>",
+          "resume": "<bool>"
+        },
+        "registers_group": [
+          "<str>"
+        ],
+        "rtos": {
+          "available_via": "<str>",
+          "granularity": "<str>"
+        },
+        "stop_at": [
+          "<str>"
+        ],
+        "svd": {
+          "read": "<bool>",
+          "tree_path": "<str>"
+        },
+        "watch_formats": [
+          "<str>"
+        ]
+      },
+      "plans": [
+        {
+          "id": "<str>",
+          "requires_hardware": "<bool>",
+          "steps": [
+            "<str>"
+          ],
+          "title": "<str>"
+        }
+      ],
+      "probes": {
+        "default": "<str>",
+        "list": [
+          {
+            "available": "<bool>",
+            "backend": "<str>",
+            "interface_cfg": "<str>",
+            "name": "<str>",
+            "speed": null
+          }
+        ]
+      },
+      "profile": {
+        "available": [
+          "<str>"
+        ],
+        "desc": "<str>",
+        "host": "<str>",
+        "id": "<str>",
+        "label": "<str>",
+        "modes": [
+          {
+            "active": "<bool>",
+            "archetype": [],
+            "desc": "<str>",
+            "host": "<str>",
+            "host_exists": "<bool>",
+            "id": "<str>",
+            "label": "<str>",
+            "order": "<num>",
+            "workspaces": [
+              "<str>"
+            ]
+          }
+        ],
+        "name": "<str>",
+        "path": "<str>",
+        "projects": {
+          "archetype": [
+            "<str>"
+          ]
+        },
+        "tools": {
+          "exclude": [],
+          "include": []
+        },
+        "workspaces": [
+          "<str>"
+        ]
+      },
+      "serial": {
+        "buffer": {
+          "max_bytes": "<num>",
+          "max_chunks": "<num>",
+          "max_dec_frames": "<num>",
+          "max_lines": "<num>",
+          "rate_window_s": "<num>"
+        },
+        "decoders": [
+          {
+            "channels": "<str>",
+            "desc": "<str>",
+            "id": "<str>",
+            "label": "<str>"
+          }
+        ],
+        "directions": [
+          "<str>"
+        ],
+        "encodings": [
+          "<str>"
+        ],
+        "eols": [
+          "<str>"
+        ],
+        "features": [
+          "<str>"
+        ],
+        "formats": [
+          "<str>"
+        ],
+        "frames": {
+          "bit_orders": [
+            "<str>"
+          ],
+          "checksums": [
+            "<str>"
+          ],
+          "cover_anchors": [
+            "<str>"
+          ],
+          "crc_presets": [
+            "<str>"
+          ],
+          "encodings": [
+            "<str>"
+          ],
+          "endians": [
+            "<str>"
+          ],
+          "endpoints": {
+            "auto": "<str>",
+            "codegen": "<str>",
+            "encode": "<str>",
+            "learn": "<str>",
+            "load": "<str>",
+            "preview": "<str>",
+            "save": "<str>",
+            "template_import": "<str>",
+            "templates": "<str>",
+            "verify": "<str>"
+          },
+          "escape_applies": [
+            "<str>"
+          ],
+          "learn": {
+            "auto_margin": "<num>",
+            "auto_min_score": "<num>",
+            "checksum_probes": [
+              "<str>"
+            ],
+            "min_head_hits": "<num>",
+            "note": "<str>"
+          },
+          "length_field_types": [
+            "<str>"
+          ],
+          "max_array": "<num>",
+          "max_fields": "<num>",
+          "max_file_bytes": "<num>",
+          "max_frame_bytes": "<num>",
+          "max_profiles": "<num>",
+          "max_variants": "<num>",
+          "schema": {
+            "escape": {
+              "applies": "<str>",
+              "escape_byte": "<str>",
+              "targets": "<str>",
+              "xor": "<str>"
+            },
+            "field": {
+              "array": "<str>",
+              "bias": "<str>",
+              "bit_length": "<str>",
+              "bit_offset": "<str>",
+              "bit_order": "<str>",
+              "bits": "<str>",
+              "encoding": "<str>",
+              "endian": "<str>",
+              "enum": "<str>",
+              "length": "<str>",
+              "name": "<str>",
+              "offset": "<str>",
+              "plot": "<str>",
+              "scale": "<str>",
+              "type": "<str>",
+              "unit": "<str>"
+            },
+            "frame": {
+              "head_hex": "<str>",
+              "heads": "<str>",
+              "id_field": {
+                "bit_length": "<str>",
+                "bit_offset": "<str>",
+                "bit_order": "<str>",
+                "endian": "<str>",
+                "offset": "<str>",
+                "type": "<str>"
+              },
+              "idle_gap_ms": "<str>",
+              "length": "<str>",
+              "length_field": {
+                "add": "<str>",
+                "endian": "<str>",
+                "mul": "<str>",
+                "offset": "<str>",
+                "type": "<str>"
+              },
+              "max_bytes": "<str>",
+              "tail_hex": "<str>"
+            },
+            "profile": {
+              "allow_overlap": "<str>",
+              "checksum": "<str>",
+              "escape": "<str>",
+              "fields": "<str>",
+              "frame": "<str>",
+              "id": "<str>",
+              "kind": "<str>",
+              "label": "<str>",
+              "variants": "<str>"
+            },
+            "variant": {
+              "checksum": "<str>",
+              "fields": "<str>",
+              "id": "<str>",
+              "label": "<str>"
+            }
+          },
+          "templates": {
+            "import": "<str>",
+            "list": "<str>",
+            "path": "<str>"
+          },
+          "types": [
+            "<str>"
+          ]
+        },
+        "line": {
+          "data_bits": [
+            "<num>"
+          ],
+          "default": {
+            "data_bits": "<num>",
+            "flow": "<str>",
+            "parity": "<str>",
+            "stop_bits": "<num>",
+            "text": "<str>"
+          },
+          "flow": [
+            "<str>"
+          ],
+          "note": "<str>",
+          "parity": [
+            "<str>"
+          ],
+          "stop_bits": [
+            "<num>"
+          ],
+          "text_forms": [
+            "<str>"
+          ]
+        },
+        "log_profiles": {
+          "issues": "<str>",
+          "kinds": [
+            "<str>"
+          ],
+          "session_scoped": "<bool>",
+          "source": "<str>",
+          "symbolize": "<str>"
+        },
+        "loop": {
+          "count_zero_means": "<str>",
+          "interleaving": "<str>",
+          "max_duration_s": "<num>",
+          "min_interval_ms": "<num>"
+        },
+        "reconnect": {
+          "backoff_ms": [
+            "<num>"
+          ],
+          "default": {
+            "enabled": "<bool>",
+            "max_attempts": "<num>",
+            "max_ms": "<num>",
+            "min_ms": "<num>"
+          },
+          "states": [
+            "<str>"
+          ]
+        },
+        "run_yield": {
+          "default": "<str>",
+          "note": "<str>",
+          "resume_after_run": [
+            "<str>"
+          ]
+        },
+        "transports": {
+          "default": "<str>",
+          "kinds": [
+            "<str>"
+          ],
+          "net": {
+            "defaults": {
+              "tcp-client": {
+                "host": "<str>",
+                "port": "<num>"
+              },
+              "tcp-server": {
+                "bind": "<str>",
+                "port": "<num>"
+              },
+              "udp": {
+                "bind": "<str>",
+                "port": "<num>"
+              }
+            },
+            "loopback_only": "<bool>",
+            "note": "<str>"
+          }
+        },
+        "views": [
+          "<str>"
+        ],
+        "widget": {
+          "features": {
+            "agent": "<bool>",
+            "pause": "<bool>",
+            "preview": "<bool>",
+            "raw_loop": "<bool>",
+            "repeat": "<bool>",
+            "sequence": "<bool>"
+          },
+          "limits": {
+            "max_file_bytes": "<num>",
+            "max_job_steps": "<num>",
+            "max_params": "<num>",
+            "max_repeat_s": "<num>",
+            "max_run_s": "<num>",
+            "max_steps": "<num>",
+            "max_template": "<num>",
+            "max_widgets": "<num>",
+            "min_repeat_ms": "<num>"
+          },
+          "match_kinds": [
+            "<str>"
+          ],
+          "param_types": [
+            "<str>"
+          ],
+          "schema": "<num>",
+          "step_kinds": [
+            "<str>"
+          ]
+        }
+      },
+      "steps": {
+        "build": {
+          "channel": "<str>",
+          "label": "<str>"
+        },
+        "debug_verify": {
+          "channel": "<str>",
+          "label": "<str>"
+        },
+        "doctor": {
+          "channel": "<str>",
+          "label": "<str>"
+        },
+        "doctor_deep": {
+          "channel": "<str>",
+          "label": "<str>"
+        },
+        "flash": {
+          "channel": "<str>",
+          "label": "<str>"
+        },
+        "monitor": {
+          "channel": "<str>",
+          "label": "<str>"
+        },
+        "report": {
+          "channel": "<str>",
+          "label": "<str>"
+        }
+      }
+    },
+    "packs": {
+      "active": "<str>",
+      "chips": [],
+      "install_root": "<str>",
+      "installed": [],
+      "kernel_api": "<num>",
+      "official_root": "<str>",
+      "roots": [
+        "<str>"
+      ],
+      "schema_version": "<num>"
+    },
+    "python": {
+      "executable": "<str>",
+      "version": "<str>"
+    },
+    "root": "<str>",
+    "runs_dir": "<str>",
+    "schema_version": "<num>",
+    "serial": {
+      "available": "<bool>",
+      "backend": "<str>",
+      "console": {
+        "count": "<num>",
+        "error": null,
+        "max_records": "<num>",
+        "path": "<str>"
+      },
+      "hint": null,
+      "host_baud": "<num>",
+      "host_default": "<str>",
+      "host_line": {
+        "data_bits": "<num>",
+        "flow": "<str>",
+        "parity": "<str>",
+        "stop_bits": "<num>",
+        "text": "<str>"
+      },
+      "layer": "<str>",
+      "line_defaults": {
+        "data_bits": "<num>",
+        "flow": "<str>",
+        "parity": "<str>",
+        "stop_bits": "<num>",
+        "text": "<str>"
+      },
+      "line_supported": {
+        "ctypes": "<bool>",
+        "note": "<str>",
+        "pyserial": "<bool>"
+      },
+      "monitor": {
+        "active": "<bool>"
+      },
+      "ports": [],
+      "pyserial": "<bool>",
+      "pyserial_version": "<str>",
+      "win32_ctypes": "<bool>",
+      "win32_error": null,
+      "write_available": "<bool>"
+    },
+    "steps": {
+      "all": [
+        "<str>"
+      ],
+      "default": [
+        "<str>"
+      ],
+      "onhw": [
+        "<str>"
+      ]
+    }
+  }
+}

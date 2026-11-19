@@ -1,0 +1,17 @@
+/*
+ * korvo_shell 的 Korvo-1（ESP32-S31）板级 overlay（shell + device model 实验台）
+ *
+ * 文件名 = 板目标下划线化：esp32s31_function_coreboard/esp32s31/hpcore
+ *          -> esp32s31_function_coreboard_esp32s31_hpcore.overlay
+ *
+ * 公共差异收进 ../../../common/korvo_board.dtsi（PA_CTRL / WS2812@GPIO37 / adc0），
+ * 本工程额外要 I2C0（`i2c scan` 命令要扫 ES8389），所以再引 korvo_i2c.dtsi。
+ *
+ * 引脚（官方用户指南 V1.1）：
+ *   I2C_SDA=GPIO0  I2C_SCL=GPIO1（ES8389）
+ *   PA_CTRL=GPIO7  WS2812=GPIO37（RMT OUT0）
+ *   BOOT=GPIO61（bank1 pin29）  ADC 按键=IO42
+ */
+
+#include "../../../common/korvo_board.dtsi"
+#include "../../../common/korvo_i2c.dtsi"

@@ -1,0 +1,22 @@
+/*
+ * f411_modbus 的板级 overlay：把 USART1 变成 Modbus RTU 的物理层。
+ *
+ * 为什么挂在 &usart1 下面而不是写 chosen：
+ *   Zephyr 的 Modbus 串口实例是「uart 节点的子节点」（compatible = zephyr,modbus-serial），
+ *   驱动用 DT_INST_PARENT(inst) 反查 uart 设备。写成 chosen 找不到。
+ *
+ * 不加 de-gpios / re-gpios：
+ *   那两个是 RS485 收发器的方向脚（DE/RE）。DAP-Link 的 CDC 串口是 TTL 直连，
+ *   没有方向控制；写了反而会去操作一个不存在的引脚。
+ *
+ * 引脚不在这里写：PA9/PA10 由板级 dts 的 usart1 pinctrl 决定。
+ */
+
+&usart1 {
+	status = "okay";
+
+	modbus0: modbus0 {
+		compatible = "zephyr,modbus-serial";
+		status = "okay";
+	};
+};

@@ -1,0 +1,99 @@
+/*
+ * ESP32-S3 板级 overlay —— 同一份应用代码，换板只换这一层
+ *
+ * 文件名必须等于「板目标」用下划线连起来：
+ *   esp32s3_devkitc/esp32s3/procpu  ->  esp32s3_devkitc_esp32s3_procpu.overlay
+ * Zephyr 在编译时按 -b 的板名自动挑这个文件，不需要在命令行里 -DDTC_OVERLAY_FILE。
+ *
+ * 这里只做三件事：
+ *   1. 把板上唯一的 RGB 灯（WS2812，GPIO48）挂成 led_strip 别名，让应用层认得；
+ *   2. 删掉 Korvo-1 专用的 pa-ctrl 别名 —— 应用会据此自动裁掉功放那段功能；
+ *   3. 打开 rmt（WS2812 的时序引擎）和 adc0/adc1。
+ */
+
+#include <zephyr/dt-bindings/led/led.h>
+
+/ {
+	aliases {
+		/* S3 最小板上没有功放使能脚，把这个别名删掉，
+		 * main.c 里的 DT_HAS_ALIAS(pa_ctrl) 就是 0，整段功能自动不编译 */
+		/delete-property/ pa-ctrl;
+		led-strip = &led_strip;
+	};
+
+	led_strip: ws2812 {
+		compatible = "worldsemi,ws2812-pulse-io";
+		pulse-ios = <&rmt 0>;
+		chain-length = <1>;
+		color-mapping = <LED_COLOR_ID_GREEN
+				 LED_COLOR_ID_RED
+				 LED_COLOR_ID_BLUE>;
+		reset-delay = <300>;
+	};
+};
+
+/* WS2812 的数据脚。DevKitC-1 的板载 RGB 在 GPIO48；
+ * 换别的 S3 小板时，如果灯不亮，第一件事是查原理图确认这个脚号，改这一行即可。 */
+&pinctrl {
+	rmt_s3: rmt_s3 {
+		group1 {
+			pinmux = <RMT_OUT0_GPIO48>;
+		};
+	};
+};
+
+&rmt {
+	pinctrl-0 = <&rmt_s3>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&adc0 { status = "okay"; };
+&adc1 { status = "okay"; };
+
+/*
+ * 按键：这块小板的 KEY 在 IO45，而板级 dts 把 button0 定义在 BOOT(GPIO0)。
+ * 只覆盖 gpios，不动节点名——这样 `sw0` 别名（板级 dts 已经给了）继续有效，
+ * 应用侧照旧用 DT_ALIAS(sw0) 就行，不需要知道具体是哪个脚。
+ *
+ * GPIO45 属于第二组 GPIO：gpio1 的 pin 13（45 - 32 = 13）。
+ *
+ * ⚠️ 极性是**实测**出来的，不是照抄"按键接地"的惯性：
+ *   `app btn` 同时打印逻辑/物理电平，实测空闲为 **物理 0（低）**，
+ *   而且此时 dts 里明明开了 GPIO_PULL_UP —— 说明板上有更强的外部下拉
+ *   （IO45 在 ESP32-S3 上还是 VDD_SPI 的 strapping 脚，开发板常配下拉电阻）。
+ *   引脚被拉低、内部上拉压不过它，那按键只能是把脚**拉高**，所以这里选
+ *   GPIO_PULL_DOWN + 不给 ACTIVE_LOW（即 ACTIVE_HIGH）：空闲=0，按下=1。
+ *   如果你按下去计数不动，就是极性判断反了 → 把这一行换成
+ *   `(GPIO_PULL_UP | GPIO_ACTIVE_LOW)` 再烧一次（正文第八节有二分法排查表）。
+ *
+ * debounce-interval-ms 是 **gpio-keys 父节点**的属性（默认 30 ms），不能写在子节点上——
+ * 写在 button0 里 dtc 会直接报 "not declared in properties"（本轮真踩了）。
+ */
+&button0 {
+	gpios = <&gpio1 13 GPIO_PULL_DOWN>;
+	label = "KEY";
+};
+
+&{/buttons} {
+	debounce-interval-ms = <20>;
+};
+
+/*
+ * 控制台走哪个口，是"最小板"上最容易翻车的一件事。
+ * DevKitC-1 有两路 USB：
+ *   UART 口  -> CP2102 桥 -> uart0（板级 dts 默认选它）
+ *   USB 口   -> 芯片内置 USB-Serial-JTAG -> usb_serial（本板只接了这一个）
+ * 如果只插 USB 口却把 console 留给 uart0，串口会一片空白（本次实测就是这样）。
+ * 这里把它切到 usb_serial；插回 UART 口时把这几行删掉即可。
+ */
+&usb_serial {
+	status = "okay";
+};
+
+/ {
+	chosen {
+		zephyr,console = &usb_serial;
+		zephyr,shell-uart = &usb_serial;
+	};
+};

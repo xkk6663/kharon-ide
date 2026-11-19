@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+  <rect x="0" y="0" width="980" height="470" fill="#fbfcfe"/>
+  <text x="24" y="30" font-size="15" font-weight="600" fill="#0f172a">同一份应用，四块板：换芯片到底换哪四件东西</text>
+  <text x="24" y="52" font-size="12" fill="#64748b">SoC 层、板级目录、pinctrl、烧录探针；应用代码与驱动 API 不动，动的是这四层</text>
+
+  <rect x="24" y="76" width="932" height="30" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="38" y="96" font-size="10.5" font-weight="600" fill="#0f172a">板 / 芯片</text>
+  <text x="200" y="96" font-size="10.5" font-weight="600" fill="#0f172a">架构 / SoC</text>
+  <text x="380" y="96" font-size="10.5" font-weight="600" fill="#0f172a">板级与 pinctrl</text>
+  <text x="620" y="96" font-size="10.5" font-weight="600" fill="#0f172a">烧录 / 探针</text>
+  <text x="800" y="96" font-size="10.5" font-weight="600" fill="#0f172a">状态</text>
+
+  <rect x="24" y="106" width="932" height="72" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="38" y="132" font-size="11" font-weight="600" fill="#0f172a">ESP32-S3</text>
+  <text x="38" y="152" font-size="9.5" fill="#94a3b8">学习线主线</text>
+  <text x="200" y="132" font-size="10.5" fill="#475569">Xtensa LX7 · ESP32-S3</text>
+  <text x="200" y="152" font-size="10" fill="#475569">esp32s3_devkitc/procpu</text>
+  <text x="380" y="132" font-size="10" fill="#475569">15 文件；pinctrl 在 dts</text>
+  <text x="380" y="152" font-size="10" fill="#475569">GPIO 矩阵，无 AF 编号</text>
+  <text x="620" y="132" font-size="10" fill="#475569">west flash（esptool）</text>
+  <text x="620" y="152" font-size="10" fill="#475569">USB / 串口</text>
+  <text x="800" y="132" font-size="10" fill="#047857">✅ 实机</text>
+  <text x="800" y="152" font-size="9.5" fill="#94a3b8">S3 主线章节</text>
+
+  <rect x="24" y="178" width="932" height="72" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="38" y="204" font-size="11" font-weight="600" fill="#0f172a">ESP32-S31</text>
+  <text x="38" y="224" font-size="9.5" fill="#94a3b8">附录 A</text>
+  <text x="200" y="204" font-size="10.5" fill="#475569">RISC-V · ESP32-S31</text>
+  <text x="200" y="224" font-size="10" fill="#475569">esp32s31_function_coreboard</text>
+  <text x="380" y="204" font-size="10" fill="#475569">未合并 PR #119851</text>
+  <text x="380" y="224" font-size="10" fill="#475569">Korvo-1 板级 + caps</text>
+  <text x="620" y="204" font-size="10" fill="#475569">west flash（esptool）</text>
+  <text x="620" y="224" font-size="10" fill="#475569">USB / 串口</text>
+  <text x="800" y="204" font-size="10" fill="#b45309">📖 能编能烧</text>
+  <text x="800" y="224" font-size="9.5" fill="#94a3b8">外设未全验</text>
+
+  <rect x="24" y="250" width="932" height="82" fill="#ecfdf5" stroke="#059669"/>
+  <text x="38" y="278" font-size="11" font-weight="600" fill="#047857">STM32F411CEU6</text>
+  <text x="38" y="298" font-size="9.5" fill="#94a3b8">当前主线（Kharon）</text>
+  <text x="200" y="278" font-size="10.5" fill="#475569">ARM Cortex-M4F · STM32F4</text>
+  <text x="200" y="298" font-size="10" fill="#475569">blackpill_f411ce</text>
+  <text x="380" y="278" font-size="10" fill="#475569">自研 board module</text>
+  <text x="380" y="298" font-size="10" fill="#475569">USART1=PA9/10；PC13 低亮</text>
+  <text x="620" y="278" font-size="10" fill="#475569">DAP-Link / openocd + gdb</text>
+  <text x="620" y="298" font-size="10" fill="#475569">COM10 · 115200 8N1</text>
+  <text x="800" y="278" font-size="10" fill="#047857">✅ 实机</text>
+  <text x="800" y="298" font-size="9.5" fill="#94a3b8">tutorials/10·14</text>
+
+  <rect x="24" y="332" width="932" height="72" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="38" y="358" font-size="11" font-weight="600" fill="#0f172a">STM32F103C8T6</text>
+  <text x="38" y="378" font-size="9.5" fill="#94a3b8">同厂商换系列</text>
+  <text x="200" y="358" font-size="10.5" fill="#475569">ARM Cortex-M3 · STM32F1</text>
+  <text x="200" y="378" font-size="10" fill="#475569">blackpill_f103c8 / 最小系统板</text>
+  <text x="380" y="358" font-size="10" fill="#475569">同 STM32 pinctrl 语法</text>
+  <text x="380" y="378" font-size="10" fill="#475569">AF 不同；USART1=PA9/10</text>
+  <text x="620" y="358" font-size="10" fill="#475569">AT-Link / DAP-Link</text>
+  <text x="620" y="378" font-size="10" fill="#475569">串口按板选</text>
+  <text x="800" y="358" font-size="10" fill="#047857">✅ 迁移练习</text>
+  <text x="800" y="378" font-size="9.5" fill="#94a3b8">教程 15</text>
+
+  <rect x="24" y="418" width="932" height="36" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="38" y="441" font-size="10" fill="#475569">判定口诀：<tspan font-weight="600">SoC 有 dtsi、板有 15 文件、驱动认 SoC、探针能烧</tspan> → 四件齐了再搬应用；缺一件就先补那层，不要改业务代码。</text>
+
+  <text x="24" y="466" font-size="9.5" fill="#94a3b8">口径：Zephyr 4.5.99 · S31 依赖 PR #119851 · F411/F103 为本仓实机</text>
+</svg>
