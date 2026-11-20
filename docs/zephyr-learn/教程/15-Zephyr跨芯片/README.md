@@ -3,6 +3,12 @@
 > **现状校准（2026-11-19）**：本组三篇全部实机完成，路径已统一到
 > `applications/<family>/<app>`；F411 现在是仓库主线（`tutorials/10`），F103 是
 > 同厂商换系列的对照板。跨芯片的四件套没有变：SoC dtsi、板级目录、pinctrl、烧录探针。
+>
+> **再校准（2026-11-20）**：F103 已从“借上游 `stm32f103_mini`（xE）+ APP overlay 改容量”
+> 收口为独立板级真相 `kharon-boards/boards/st/stm32f103c8t6_bluepill`（SoC `stm32f103x8`，
+> 64 KB / 20 KB 写在板级 DTS）。产品 `f103_breath` 的 `chip` 是 `stm32f103c8t6_bluepill`；
+> 文中 2026-11-15/16 的 `stm32f103_mini` 命令与 `boards/stm32f103_mini.overlay` 是历史现场，
+> 现行命令见 §4.1 与 `docs/tutorials/15`。
 
 > 这一组回答三个递进的问题：
 > ① **"我手上已经有能跑的应用代码了，再加一块完全不同的芯片（RISC-V → Xtensa），要改多少东西？"** → 板子差异全在 devicetree / overlay 这一层，应用逻辑一行都不用动。
@@ -64,8 +70,8 @@
 |---|---|---|
 | 内核 | ARM Cortex-M4F（带 FPU） | **ARM Cortex-M3，无 FPU** |
 | 主频 | 100 MHz | **72 MHz**（HSE 8 MHz × PLL 9） |
-| 板目标 | `blackpill_f411ce`（**一段式**） | **`stm32f103_mini/stm32f103xe`（两段式，qualifier 是 SoC 名）** |
-| flash / RAM（分母） | 512 KB / 128 KB | **64 KB / 20 KB**（板级 dts 写的是 `stm32f103xe`，须在 overlay 里改成真实容量） |
+| 板目标 | `blackpill_f411ce`（**一段式**） | **`stm32f103c8t6_bluepill/stm32f103x8`**（现行；历史现场为 `stm32f103_mini/stm32f103xe`） |
+| flash / RAM（分母） | 512 KB / 128 KB | **64 KB / 20 KB**（现行由板级 `stm32f103X8.dtsi` 提供；历史现场靠 APP overlay 覆盖 xE 容量） |
 | 模块缺口 | `stm32cube\stm32f4xx\` + `core_cm4.h` + `dts\st\f4\` 的 pinctrl | **同样再缺一遍**：`stm32cube\stm32f1xx\` + `core_cm3.h` + `dts\st\f1\` 的那一个 pinctrl + 42 个 LL shim 的 F1 分支 |
 | 探针 | DAP-Link，`target/stm32f4x.cfg` | 同一个 DAP-Link，**`target/stm32f1x.cfg`** |
 | 灯 / 键 | PC13 低电平亮 / PA0 内部上拉 | 同构（**但板级 dts 里没有 `sw0` 别名，照抄会直接编译报错**） |

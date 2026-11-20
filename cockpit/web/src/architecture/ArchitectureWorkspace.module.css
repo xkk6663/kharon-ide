@@ -144,6 +144,11 @@
 .productHead {
   margin-bottom: 6px;
 }
+.productHead button,
+.cardHead button {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
 .productHead span {
   color: var(--elab-fg-faint);
   font-size: 10px;
@@ -241,4 +246,86 @@
   color: var(--elab-status-fail);
   background: color-mix(in srgb, var(--elab-status-fail) 7%, transparent);
   font-size: 11px;
+}
+.okMsg {
+  border: 1px solid color-mix(in srgb, var(--elab-status-ok) 45%, var(--elab-border));
+  border-radius: 7px;
+  padding: 6px 9px;
+  color: var(--elab-status-ok);
+  background: color-mix(in srgb, var(--elab-status-ok) 7%, transparent);
+  font-size: 11px;
+}
+
+/* ── YAML 编辑弹层 ─────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(920px, 100%);
+  max-height: min(88vh, 900px);
+  padding: 14px 16px;
+  border: 1px solid var(--elab-border);
+  border-radius: 10px;
+  background: var(--elab-bg-panel, var(--elab-bg-canvas));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+.modalHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.modalHead strong {
+  font-family: var(--elab-font-mono);
+  font-size: 13px;
+}
+.modalPath {
+  margin-top: 3px;
+  color: var(--elab-fg-faint);
+  font-family: var(--elab-font-mono);
+  font-size: 10px;
+  word-break: break-all;
+}
+.modalHint {
+  color: var(--elab-fg-faint);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.modalHint code {
+  color: var(--elab-fg-secondary);
+}
+.editor {
+  flex: 1 1 auto;
+  min-height: 320px;
+  padding: 10px;
+  resize: vertical;
+  border: 1px solid var(--elab-border);
+  border-radius: 7px;
+  background: var(--elab-bg-canvas);
+  color: var(--elab-fg-secondary);
+  font-family: var(--elab-font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+.editor:focus {
+  outline: 1px solid var(--elab-accent);
+  outline-offset: -1px;
+}
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }

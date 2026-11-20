@@ -38,6 +38,11 @@ from cockpit.platform.jobs import *  # noqa: F401,F403
 from cockpit.debug.helpers import *  # noqa: F401,F403
 from cockpit.debug.manager import *  # noqa: F401,F403
 from elab.topology import topology  # noqa: F401
+from elab.architecture_edit import read_source, write_source  # noqa: F401
+
+
+def _source_args(qs) -> tuple[str, str]:
+    return ((qs.get("kind") or [""])[0], (qs.get("name") or [""])[0])
 
 
 def handle_get(h, path, qs):
@@ -47,8 +52,27 @@ def handle_get(h, path, qs):
         return h._json(project_cards(h.cfg))
     if path == "/api/architecture":
         return h._json(topology(h.cfg))
+    if path == "/api/architecture/source":
+        kind, name = _source_args(qs)
+        try:
+            return h._json(read_source(h.cfg, kind, name))
+        except ElabError as e:
+            return h._err(400, str(e))
     if path == "/api/matrix":
         # 多板对照：按 projects yaml 的 `matrix:` 分组聚合（只读 run 留档 + 构建产物）
         return h._json(matrix_view(
             h.cfg, group=(qs.get("group") or [""])[0]))
     return False
+
+
+def handle_post(h, u, qs):
+    if getattr(u, "path", u) != "/api/architecture/source":
+        return False
+    body = h._body()
+    kind = str(body.get("kind") or "")
+    name = str(body.get("name") or "")
+    text = body.get("text")
+    try:
+        return h._json(write_source(h.cfg, kind, name, text))
+    except ElabError as e:
+        return h._err(400, str(e))

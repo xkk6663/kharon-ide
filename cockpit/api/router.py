@@ -19,7 +19,7 @@ def handle_get(h, path, qs) -> bool:
 
 def handle_post(h, u, qs) -> bool:
     for fn in (debug.handle_post, runs.handle_post, serial.handle_post,
-               workspace.handle_post, project.handle_post):
+               workspace.handle_post, project.handle_post, system.handle_post):
         if fn(h, u, qs) is not False:
             return True
     return False

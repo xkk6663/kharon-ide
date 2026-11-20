@@ -401,6 +401,11 @@ class Config:
             self._projects = out
         return self._projects
 
+    def reload_projects(self) -> dict:
+        """丢弃产品 manifest 缓存，供驾驶舱在编辑 YAML 后立即看到新拓扑。"""
+        self._projects = None
+        return self.projects
+
     # ── Product / Target ───────────────────────────────────────────
     def targets_of(self, proj: dict) -> list[dict]:
         """产品声明的 target 列表；旧单-chip 产品返回空列表。

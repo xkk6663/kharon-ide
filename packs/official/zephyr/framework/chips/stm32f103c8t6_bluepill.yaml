@@ -1,0 +1,25 @@
+# packs/official/zephyr/framework/chips/stm32f103c8t6_bluepill.yaml
+#
+# Blue Pill 板级 variant（kharon-boards/boards/st/stm32f103c8t6_bluepill）：
+# 板级真相是 64 KB flash / 20 KB SRAM，SoC 段是 stm32f103x8。
+# 与旧 stm32f103_mini.yaml 的区别：不再借用上游 xE（256 KB）板。
+
+id: stm32f103c8t6_bluepill
+vendor: zephyr
+platform: framework
+part: STM32F103C8T6
+target: stm32f103c8t6_bluepill/stm32f103x8
+core_name: Cortex-M3
+
+serial:
+  baud: 115200
+
+debug:
+  gdb_key: gdb_zephyr_arm
+  addr2line_key: addr2line_zephyr_arm
+  openocd_key: openocd
+  openocd_config: kharon-boards/boards/st/stm32f103c8t6_bluepill/support/openocd.cfg
+  device: STM32F103C8
+
+flash:
+  runner: openocd

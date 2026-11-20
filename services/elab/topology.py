@@ -116,6 +116,7 @@ def _app_record(app_root: Path, cfg: Config) -> dict:
     return {
         "name": app_root.name,
         "root": to_fwd(app_root),
+        "app_yaml": to_fwd(app_root / "app.yaml") if (app_root / "app.yaml").is_file() else "",
         "kind": str(data.get("kind") or "product"),
         "board_scope": str(data.get("board_scope") or ""),
         "declared_board": str(data.get("board") or ""),
@@ -225,6 +226,7 @@ def topology(cfg: Config) -> dict:
         products.append({
             "name": name,
             "root": to_fwd(raw.get("root") or ""),
+            "yaml": to_fwd(raw.get("_path") or ""),
             "archetype": str(raw.get("archetype") or ""),
             "targets": targets,
         })

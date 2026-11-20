@@ -1,6 +1,7 @@
 import type {
   AdaptResponse,
   ArchitectureResponse,
+  ArchitectureSource,
   Capabilities,
   DebugAuditResponse,
   DebugBreakpointsResponse,
@@ -190,6 +191,13 @@ export const api = {
   projects: () => req<ProjectsResponse>("/api/projects"),
   /** Board / APP / Product 拓扑（只读；板级真相与 APP 归属的驾驶舱事实源） */
   architecture: () => req<ArchitectureResponse>("/api/architecture"),
+  /** 读产品 manifest / APP app.yaml（kind 只能是 product / app） */
+  architectureSource: (kind: "product" | "app", name: string) =>
+    req<ArchitectureSource>(
+      `/api/architecture/source?kind=${encodeURIComponent(kind)}&name=${encodeURIComponent(name)}`),
+  /** 校验后写回 YAML；后端只接受拓扑内名字，路径不接受客户端指定 */
+  architectureSave: (kind: "product" | "app", name: string, text: string) =>
+    post<ArchitectureSource>("/api/architecture/source", { kind, name, text }),
   runs: () => req<RunsResponse>("/api/runs"),
   /**
    * 只读「当前在跑的 run」——**不扫历史目录**。

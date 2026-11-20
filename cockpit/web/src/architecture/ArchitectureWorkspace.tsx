@@ -28,6 +28,14 @@ function cmdText(pv: PlanPreview | null, step = "build"): string {
     .join(" ");
 }
 
+type EditState = {
+  kind: "product" | "app";
+  name: string;
+  path: string;
+  text: string;
+  exists: boolean;
+};
+
 export interface ArchitectureWorkspaceProps {
   selectedProduct: string;
   selectedTarget: string;
@@ -46,6 +54,10 @@ export function ArchitectureWorkspace({
   const [busy, setBusy] = useState(false);
   const [pv, setPv] = useState<PlanPreview | null>(null);
   const [pvErr, setPvErr] = useState<string | null>(null);
+  const [edit, setEdit] = useState<EditState | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editErr, setEditErr] = useState<string | null>(null);
+  const [editMsg, setEditMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -90,6 +102,37 @@ export function ArchitectureWorkspace({
     }
   };
 
+  const openSource = async (kind: "product" | "app", name: string) => {
+    setEditBusy(true);
+    setEditErr(null);
+    setEditMsg(null);
+    try {
+      const src = await api.architectureSource(kind, name);
+      setEdit({ kind, name, path: src.path, text: src.text, exists: src.exists });
+    } catch (e) {
+      setEditErr(errmsg(e));
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const saveSource = async () => {
+    if (!edit) return;
+    setEditBusy(true);
+    setEditErr(null);
+    setEditMsg(null);
+    try {
+      const saved = await api.architectureSave(edit.kind, edit.name, edit.text);
+      setEdit({ ...edit, path: saved.path, exists: true });
+      setEditMsg(`已保存 ${saved.bytes} B；拓扑已重新扫描`);
+      await load();
+    } catch (e) {
+      setEditErr(errmsg(e));
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
   const boardCard = (b: ArchitectureBoard) => (
     <article key={`${b.source}-${b.id}`} className={s.card} data-board={b.id}>
       <header className={s.cardHead}>
@@ -126,6 +169,10 @@ export function ArchitectureWorkspace({
         <Tag tone={a.kind === "lab" ? "amber" : a.kind === "sample" ? "violet" : "green"} dense>
           {a.kind}
         </Tag>
+        <Button size="sm" variant="toolbar" disabled={editBusy}
+          onClick={() => void openSource("app", a.name)}>
+          {a.app_yaml ? "编辑 app.yaml" : "新建 app.yaml"}
+        </Button>
       </header>
       <div className={s.sub} title={a.root}>{basename(a.root)}</div>
       <div className={s.tags}>
@@ -230,6 +277,10 @@ export function ArchitectureWorkspace({
               <div className={s.productHead}>
                 <strong>{p.name}</strong>
                 <span>{p.targets.length} target</span>
+                <Button size="sm" variant="toolbar" disabled={editBusy}
+                  onClick={() => void openSource("product", p.name)}>
+                  编辑 manifest
+                </Button>
               </div>
               {p.targets.map((t) => targetRow(p, t))}
             </div>
@@ -267,6 +318,53 @@ export function ArchitectureWorkspace({
           </div>
         )}
       </div>
+
+      {editErr && !edit ? <div className={s.error}>读取失败：{editErr}</div> : null}
+
+      {edit ? (
+        <div className={s.modalOverlay} role="dialog" aria-modal="true"
+          aria-label={`${edit.kind} ${edit.name}`}>
+          <div className={s.modal}>
+            <div className={s.modalHead}>
+              <div>
+                <strong>{edit.kind === "product" ? "产品 manifest" : "APP app.yaml"} · {edit.name}</strong>
+                <div className={s.modalPath} title={edit.path}>{edit.path}</div>
+              </div>
+              <Button size="sm" variant="toolbar"
+                onClick={() => { setEdit(null); setEditErr(null); setEditMsg(null); }}>
+                关闭
+              </Button>
+            </div>
+            <div className={s.modalHint}>
+              编辑器是 YAML 原文；保存前由后端解析校验，路径只按 topology 反查
+              （产品必须在 <code>kharon-manifest/products</code>，APP 必须在 <code>applications/&lt;name&gt;</code>）。
+              {edit.kind === "product" ? " 产品 name 不能在这里改。" : ""}
+              {edit.exists ? "" : " 文件尚不存在，保存即新建。"}
+            </div>
+            <textarea
+              className={s.editor}
+              spellCheck={false}
+              value={edit.text}
+              onChange={(e) => { setEdit({ ...edit, text: e.target.value }); setEditMsg(null); }}
+            />
+            {editErr ? <div className={s.error}>{editErr}</div> : null}
+            {editMsg ? <div className={s.okMsg}>{editMsg}</div> : null}
+            <div className={s.modalActions}>
+              <Button size="sm" variant="toolbar" disabled={editBusy}
+                onClick={() => void api.architectureSource(edit.kind, edit.name)
+                  .then((src) => { setEdit({ ...edit, path: src.path, text: src.text,
+                    exists: src.exists }); setEditErr(null); setEditMsg(null); })
+                  .catch((e) => setEditErr(errmsg(e)))}>
+                重新读取
+              </Button>
+              <Button size="sm" variant="primary" disabled={editBusy}
+                onClick={() => void saveSource()}>
+                {editBusy ? "保存中…" : "保存并重扫描"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

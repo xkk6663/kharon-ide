@@ -264,6 +264,8 @@ export interface ArchitectureBoard {
 export interface ArchitectureApp {
   name: string;
   root: string;
+  /** ``app.yaml`` 绝对路径；无 app.yaml 的产品 APP 为空串 */
+  app_yaml: string;
   /** app.yaml 的 kind；无 app.yaml 的产品 APP 为 product */
   kind: string;
   board_scope: string;
@@ -289,6 +291,8 @@ export interface ArchitectureTarget {
 export interface ArchitectureProduct {
   name: string;
   root: string;
+  /** 产品 manifest 的绝对路径；架构页编辑的源文件 */
+  yaml: string;
   archetype: string;
   targets: ArchitectureTarget[];
 }
@@ -299,6 +303,16 @@ export interface ArchitectureResponse {
   apps: ArchitectureApp[];
   products: ArchitectureProduct[];
   warnings: string[];
+}
+
+/** `/api/architecture/source` 的读写响应（路径由后端反查，客户端不传绝对路径） */
+export interface ArchitectureSource {
+  kind: "product" | "app";
+  name: string;
+  path: string;
+  exists: boolean;
+  text: string;
+  bytes: number;
 }
 
 // ── /api/capabilities ────────────────────────────────────────────
