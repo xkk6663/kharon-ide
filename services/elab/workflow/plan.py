@@ -210,7 +210,8 @@ class Plan:
 
     def _resolve_openocd_config(self, name: str) -> str:
         """``debug.openocd_config`` → 存在的绝对路径（找不到返回空，不抛错）。"""
-        return resolve_openocd_config(name, self.cfg.root, self.source_dir, self.work_dir)
+        return resolve_openocd_config(name, self.cfg.root, self.cfg.zephyr_root,
+                               self.source_dir, self.work_dir)
 
 
 def _shell_join(parts: list[str]) -> str:

@@ -73,6 +73,7 @@ def _openocd_argv(plan: Plan, commands, *,
     oc_cfg = resolve_openocd_config(
         str(dbg.get("openocd_config") or ""),
         getattr(getattr(plan, "cfg", None), "root", ""),
+        getattr(getattr(plan, "cfg", None), "zephyr_root", ""),
         getattr(plan, "source_dir", ""), getattr(plan, "work_dir", ""))
     if oc_cfg:
         if not Path(oc_cfg).is_file():

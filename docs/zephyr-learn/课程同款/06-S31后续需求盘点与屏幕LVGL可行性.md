@@ -32,9 +32,9 @@
 **"等"的判定信号**（换版本后跑，三条全绿才值得动）：
 
 ```powershell
-Select-String west\zephyr\drivers\bluetooth\hci\hci_esp32.c -Pattern 'ESP32S31'
-Select-String west\zephyr\drivers\wifi\esp32\Kconfig.esp32 -Pattern 'ESP32S31'
-Select-String west\zephyr\dts\riscv\espressif\esp32s31\esp32s31_common.dtsi -Pattern 'wifi:|esp32_bt_hci:'
+Select-String zephyr-workspace\zephyr\drivers\bluetooth\hci\hci_esp32.c -Pattern 'ESP32S31'
+Select-String zephyr-workspace\zephyr\drivers\wifi\esp32\Kconfig.esp32 -Pattern 'ESP32S31'
+Select-String zephyr-workspace\zephyr\dts\riscv\espressif\esp32s31\esp32s31_common.dtsi -Pattern 'wifi:|esp32_bt_hci:'
 ```
 
 **等的时候不浪费**：
@@ -116,9 +116,9 @@ CONFIG_MAIN_STACK_SIZE=4096
 
 ```powershell
 # 路 A：gitee 镜像（先测通不通）
-git clone https://gitee.com/mirrors/lvgl.git west\modules\lib\gui\lvgl
+git clone https://gitee.com/mirrors/lvgl.git zephyr-workspace\modules\lib\gui\lvgl
 # 拉完必须切到 west.yml 钉的 rev，否则 Zephyr 的 glue 对不上
-git -C west\modules\lib\gui\lvgl checkout c9ffd4692de246eb911c7ba49b78a331b2c63c74
+git -C zephyr-workspace\modules\lib\gui\lvgl checkout c9ffd4692de246eb911c7ba49b78a331b2c63c74
 
 # 路 B：离线包（在能上网的机器 clone 后打包，拷回来解压到同一路径）
 # 路 C：不用 LVGL，自己写最小绘图（不推荐，失去学习价值）

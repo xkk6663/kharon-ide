@@ -1,5 +1,6 @@
 import type {
   AdaptResponse,
+  ArchitectureResponse,
   Capabilities,
   DebugAuditResponse,
   DebugBreakpointsResponse,
@@ -187,6 +188,8 @@ export interface FpNode {
 export const api = {
   capabilities: () => req<Capabilities>("/api/capabilities"),
   projects: () => req<ProjectsResponse>("/api/projects"),
+  /** Board / APP / Product 拓扑（只读；板级真相与 APP 归属的驾驶舱事实源） */
+  architecture: () => req<ArchitectureResponse>("/api/architecture"),
   runs: () => req<RunsResponse>("/api/runs"),
   /**
    * 只读「当前在跑的 run」——**不扫历史目录**。
@@ -295,11 +298,12 @@ export const api = {
    * ★ 走 **GET**：它没有副作用（不 spawn、不写盘、不发射事件）。
    *   用 POST 会让人以为"点了就动手了"，与它的语义相反。
    */
-  plan: (opts: { project: string; steps?: StepId[]; clean?: boolean; jobs?: number }) => {
+  plan: (opts: { project: string; steps?: StepId[]; clean?: boolean; jobs?: number; target?: string }) => {
     const q = new URLSearchParams({ project: opts.project });
     if (opts.steps && opts.steps.length) q.set("steps", opts.steps.join(","));
     if (opts.clean) q.set("clean", "1");
     if (opts.jobs) q.set("jobs", String(opts.jobs));
+    if (opts.target) q.set("target", opts.target);
     return req<PlanPreview>(`/api/plan?${q.toString()}`);
   },
 
@@ -308,6 +312,7 @@ export const api = {
     steps?: StepId[];
     clean?: boolean;
     jobs?: number;
+    target?: string;
   }) =>
     req<{ run: string; project: string; steps: string[]; pid: number }>(
       "/api/run",
@@ -327,28 +332,6 @@ export const api = {
         body: JSON.stringify({ run, reason }),
       },
     ),
-
-  /**
-   * 切换工作区模式（classic ⇄ Zephyr）：换 host 事实源 + 换装配清单。
-   *
-   * ★ 它**不是**纯前端状态：后端会改自己的 `ELAB_HOST` / `ELAB_PROFILE`，
-   *   之后起的 run 子进程、调试会话都跟着走。所以切完必须重新拉
-   *   `capabilities` + `projects`（工程可见范围变了），不能只改本地开关。
-   *   有闭环在跑 / 调试或串口监视开着时后端回 400，前端原样把话放出来。
-   */
-  setMode: (mode: string) =>
-    req<{
-      ok: boolean;
-      mode: string;
-      profile?: import("./types").ProfileSummary;
-      host?: string;
-      runs_dir?: string;
-      runs_dir_changed?: boolean;
-    }>("/api/mode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode }),
-    }),
 
   /**
    * 手写通道（M3-b）：写一条出去、收一小段回显 —— **一次请求内闭环**。

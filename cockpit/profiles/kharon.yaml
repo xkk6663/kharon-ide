@@ -1,26 +1,15 @@
-# cockpit/profiles/kharon.yaml —— Kharon（Zephyr 模式）驾驶舱的装配清单
+# cockpit/profiles/kharon.yaml —— Kharon（Zephyr）驾驶舱的唯一装配清单
 #
-# 与 web.yaml 的差别只有两处（装配数据，业务代码零分支）：
-#   ① projects.archetype：只显示 `archetype: zephyr` 的工程 —— Kharon 驾驶舱
-#      里不该出现 CubeMX/ESP-IDF 的存量工程（它们的 provider 在 kharon.host.yaml
-#      下本来也解析不到，列出来只会是一片"不可用"红标）；
-#   ② workspaces 的顺序按 Zephyr 的工作流排（调试 → 构建 → 面板 → 烧录 → 串口 →
-#      矩阵 → west → 工具），并把 modbus 排在串口后面。
+# 物理拆分后驾驶舱只服务当前 Zephyr 工作区，不再有 classic 模式开关。
+# 这里只保留三件事：工程可见范围、右列工作区顺序、工具启停。
 #
-# ★ 为什么 modbus 面板出现在这里（2026-11-18 加）：
-#   Modbus 不是厂商能力，是**协议面板**：主站侧的点表/轮询/事务流水全部由内核
-#   （services/elab/modbusmaster.py）实现，与从站是裸机还是 Zephyr 无关。
-#   所以 Zephyr 从站（applications/stm32f4/f411_modbus）用的是**同一个面板、同一份点表格式**，
-#   只是寄存器表换成 Zephyr 侧实现。把它排除在外反而逼着人用两套工具。
-#
-# 激活：kharon.host.yaml 顶层 `profile: kharon`，或运行期 `POST /api/mode {mode: kharon}`
-#      （= 顶栏那个 classic ⇄ Zephyr 开关；`host:` 声明切换时换哪份主机事实源）。
+# 激活：config/host.kharon.profile.yaml 顶层 `profile: kharon`。
 profile: kharon
 label: zephyr
 desc: Kharon 链：Zephyr / west 单链工程
-host: kharon.host.yaml
 order: 20
 workspaces:
+  - arch
   - debug
   - build
   - dash
@@ -28,7 +17,6 @@ workspaces:
   - serial
   - modbus
   - matrix
-  - west
   - tools
 projects:
   archetype:

@@ -1,11 +1,13 @@
 # 13 · Zephyr OTA 升级（局域网 + 公网）—— 用 s3_wifi_portal 走一遍真机闭环
 
-> **现状校准（2026-11-19）**：Zephyr 4.5.99 / west v1.5.0 / SDK 1.0.1；应用落点
-> `applications/esp32s3/s3_wifi_portal`，工程 `projects/kharon/s3_wifi_portal.yaml`。
+> **现状校准（2026-11-20）**：Zephyr 4.5.99 / west v1.5.0 / SDK 1.0.1；应用落点
+> `zephyr-workspace/applications/esp32s3/s3_wifi_portal`，产品登记
+> `zephyr-workspace/kharon-manifest/products/kharon/s3_wifi_portal.yaml`。
 > OTA 的构建、签名、投放仍按本文；入口命令用 `kharon run/build`。
+> 文中 `west/...` 路径已随双根拆分改为 `zephyr-workspace/...`，分层见 [15](./15-Zephyr工作区双根与板级APP产品.md)。
 
-> 目标板：ESP32-S3 DevKitC（`esp32s3_devkitc/esp32s3/procpu`）· Kharon（Zephyr）模式
-> 载体工程：`applications/esp32s3/s3_wifi_portal`（Wi-Fi 配网门户 + MCUboot 双镜像）
+> 目标板：ESP32-S3 自定义板（`esp32s3_korvo/esp32s3/procpu`）· Kharon（Zephyr）模式
+> 载体工程：`applications/esp32s3/s3_wifi_portal`（相对 `ZEPHYR_ROOT`；Wi-Fi 配网门户 + MCUboot 双镜像）
 > 本篇回答一个问题：**一块已经卖出去的板子，怎么在不插 USB 的情况下换固件 —— 并且换坏了能自己回来。**
 > 两条通道：§1–§7 是**局域网推送**（PC 直连板子 :8080），§8 是**公网拉取**（板子在 NAT 后面，
 > 只出站 8443 去云端取），两条通道共用同一套门禁、写槽与自证逻辑。
@@ -68,9 +70,9 @@ kharon run -p s3_wifi_portal --steps build
 重签，参数照抄 Zephyr 自己那条 sign 命令（header 0x20 / slot 1376256 / align 4）：
 
 ```powershell
-.deps\venv\Scripts\python.exe west\bootloader\mcuboot\scripts\imgtool.py sign `
+.deps\venv\Scripts\python.exe ..\zephyr-workspace\bootloader\mcuboot\scripts\imgtool.py sign `
     --version "1.149.0+0" --header-size 0x20 --slot-size 1376256 --align 4 `
-    --key west\bootloader\mcuboot\root-rsa-2048.pem `
+    --key ..\zephyr-workspace\bootloader\mcuboot\root-rsa-2048.pem `
     build\esp32s3\s3_wifi_portal\default\s3_wifi_portal\zephyr\zephyr.bin fw149.signed.bin
 
 # 签完必须自校验：不是 1.149.0 就别推板子

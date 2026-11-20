@@ -3,6 +3,12 @@
 日期：2026-11-19。目的：把“Zephyr 专属 IDE”从“classic 多芯片 + DSH 插件发布线”里独立出来，
 让两条产品线的版本、发布节奏和目录边界互不牵扯。
 
+> **现状校准（2026-11-20）**：本文记录的是 11-19 拆分当时的中间态，路径按**历史快照**读。
+> 现在工作区已再次物理拆分：IDE 根 `kharon-ide`，west topdir 是同级 `zephyr-workspace`；
+> 板级在 `zephyr-workspace/kharon-boards`，公共层在 `zephyr-workspace/elab-app-common`，
+> 产品在 `zephyr-workspace/kharon-manifest/products/kharon`。以
+> [`tutorials/15`](../tutorials/15-Zephyr工作区双根与板级APP产品.md) 为准。
+
 ## 1. 两个仓的定位
 
 | 仓 | 定位 | 状态 |
@@ -67,8 +73,16 @@ provider 的 `EXTRA_ZEPHYR_MODULES` 同时挂 `elab-boards` 与 `elab-app-common
 ### 4.3 bootstrap 入口
 
 `kharon.cmd bootstrap` 已可用，等价于原来的
-`python -m kharon.bootstrap`；`--check` 只读体检，`--offline` 只用本机目录，
-`--write-local` 写 `host.local.yaml` 的 `kharon:` 分节。
+`python -m kharon.bootstrap`。2026-11-19 起分两条通道：
+
+- **learning（全新 clone 默认）**：`west init` 跟随上游，`west update` 全量；对齐 Zephyr
+  官方教程，适合第一次学 Zephyr、看完整 boards / samples / drivers。
+- **pinned（`--pinned`）**：按 manifest 的 zephyr commit 初始化，只拉
+  `zephyr.pinned_modules` 的 6 个模块；适合 CI、回归、复现某次实验。
+
+`--check` 只读体检，`--offline` 只用本机目录，`--write-local` 写 `host.local.yaml`
+的 `kharon:` 分节。当前工作区会沿用上次记录的通道；通道状态在 `.kharon/bootstrap.json`
+（gitignored）。`west` 是 junction 时拒绝联网更新，避免误改旧仓工作区。
 
 `manifests/zephyr.west.yml` 的 `hal_espressif` 已从漂移的 `pull/657/head` 钉到
 `d89f455da929bdda8cfe0960fceeb36c704ce1b8`；升级 Zephyr 时整份重新导出，不允许只改单个 revision。
@@ -85,8 +99,9 @@ provider 的 `EXTRA_ZEPHYR_MODULES` 同时挂 `elab-boards` 与 `elab-app-common
 
 ## 6. 验收基线（本仓当前）
 
-- `kharon bootstrap --check`：manifest / host profile / venv / workspace / SDK / 工具链全绿；
-  `modules` 仍取决于本机 `west update` 进度（新 clone 首次会缺，属正常）。
+- `kharon bootstrap --check`：pinned 通道 manifest / host profile / venv / workspace /
+  `zephyr.commit` / 6 模块 / SDK / 工具链全绿；learning 通道按当前 `west list` 检查全量模块。
+  新 clone 首次选 learning 会缺模块，属正常，跑 `kharon bootstrap` 下载即可。
 - `kharon deps --check`：`esp32s31_function_coreboard` 板级 module 可见。
 - `kharon env --check`：5 个变量 / 5 条 PATH 前置。
 - `kharon run -p f411_breath --steps doctor,build`：通过，产物在
@@ -95,10 +110,10 @@ provider 的 `EXTRA_ZEPHYR_MODULES` 同时挂 `elab-boards` 与 `elab-app-common
 
 ## 7. 还没做的
 
-- 新仓尚未 `git init` / 首次 commit（按用户偏好，未收到明确提交命令不做）。
-- 新 clone 的 `west update --narrow` 尚未在本机跑完；首次使用者需执行
-  `kharon bootstrap` 并等待网络下载。允许清单里 `psa-arch-tests`、`tf-m-tests`
-  属于上游 `testing` 组，已标 `optional: true`，不参与“必需就绪”判定。
+- 本地已 `git init` 并完成首次提交（`628b261` + 清理提交 `21992d5`）；remote 地址与 push 待定。
+- learning 通道的 fresh clone 全量 `west update`（约 1.1G）尚未在本机实跑；本机验证复用旧仓
+  `west` / `.deps` junction，跑的是 pinned 6 模块闭包。
+- `pinned` 通道的 fresh clone 6 模块 `west update` 也待一台干净机器实测。
 - `docs/design` 中 classic 时代文档保留作设计背景，文首已统一标注“历史文档（classic / DSH 时代）”。
 - CI：`.github/workflows/kharon-ci.yml` 已创建（Windows + Python 3.11，契约漂移检查 + 全量 pytest）；
   需要真机/探针的 `f411_breath` 闭环仍由 `ci/matrix.yaml` 的 self-hosted runner 承担。

@@ -86,6 +86,72 @@ class Config:
         self._pinned_chips: dict[str, dict] = {}
         self._projects = None
         self._packs = None
+        self._zephyr_root = None
+        # Product -> Target 选择（仅本进程有效；CLI run 一次只跑一个 target）
+        self._target_selection: dict[str, str] = {}
+
+    # ── 双根：IDE 根 / Zephyr 工作区根 ───────────────────────────
+    @property
+    def ide_root(self) -> Path:
+        """IDE 根（历史 ``ELAB_ROOT`` 的新名字）。"""
+        return self.root
+
+    @property
+    def zephyr_root(self) -> Path:
+        """Zephyr 工作区根（west topdir）。
+
+        目标布局：``IDE_ROOT/../zephyr-workspace``；旧布局回落到
+        ``IDE_ROOT/west``。显式环境变量 ``ZEPHYR_ROOT`` / ``ELAB_ZEPHYR_ROOT``
+        优先，保证迁移期与 CI 都能指定。
+        """
+        if self._zephyr_root is None:
+            raw = (os.environ.get("ZEPHYR_ROOT")
+                   or os.environ.get("ELAB_ZEPHYR_ROOT") or "").strip()
+            if raw:
+                p = Path(raw)
+                if not p.is_absolute():
+                    p = self.root / p
+                self._zephyr_root = p.resolve()
+            else:
+                target = self.root.parent / "zephyr-workspace"
+                if (target / ".west" / "config").is_file():
+                    self._zephyr_root = target.resolve()
+                else:
+                    self._zephyr_root = (self.root / "west").resolve()
+        return self._zephyr_root
+
+    def root_ctx(self) -> dict:
+        """双根插值上下文；``ELAB_ROOT`` 是 ``IDE_ROOT`` 的兼容别名。"""
+        return {
+            "IDE_ROOT": to_fwd(self.ide_root),
+            "ELAB_ROOT": to_fwd(self.ide_root),
+            "ZEPHYR_ROOT": to_fwd(self.zephyr_root),
+        }
+
+    @property
+    def products_dir(self) -> Path:
+        """产品定义根：目标布局在 workspace 的 kharon-manifest/products。"""
+        env = (os.environ.get("KHARON_PRODUCTS_DIR") or "").strip()
+        if env:
+            p = Path(env)
+            if not p.is_absolute():
+                p = self.root / p
+            return p.resolve()
+        target = self.zephyr_root / "kharon-manifest" / "products"
+        if target.is_dir():
+            return target.resolve()
+        return (self.root / "projects").resolve()
+
+    @property
+    def runtime_dir(self) -> Path:
+        """IDE 侧运行时状态根（调试/帧/组件 JSON），不进产品仓。"""
+        env = (os.environ.get("KHARON_RUNTIME_DIR") or "").strip()
+        if env:
+            p = Path(env)
+            if not p.is_absolute():
+                p = self.root / p
+            return p.resolve()
+        return (self.root / ".work" / "projects").resolve()
 
     # ── L0 主机层 ────────────────────────────────────────────────
     @property
@@ -325,7 +391,7 @@ class Config:
             # ★ 递归发现：`projects/kharon/*.yaml` 这类发行子目录也要被看见。
             #   packs / providers 两处发现根早已数据驱动，只有 projects 还是
             #   单层 glob —— 新增发行时不必再动内核（Kharon T3）。
-            base = self.root / "projects"
+            base = self.products_dir
             for path in sorted(base.rglob("*.yaml")):
                 proj = _yaml.load_file(path) or {}
                 if "name" not in proj:
@@ -335,18 +401,106 @@ class Config:
             self._projects = out
         return self._projects
 
+    # ── Product / Target ───────────────────────────────────────────
+    def targets_of(self, proj: dict) -> list[dict]:
+        """产品声明的 target 列表；旧单-chip 产品返回空列表。
+
+        规则（计划 §5.3）：
+        - ``targets[].id`` 唯一，``chip`` 必须存在；
+        - 顶层 ``chip`` 若存在，只能等于 ``targets[0].chip``（默认 target 的别名），
+          避免“两个真相”。
+        """
+        targets = proj.get("targets") or []
+        if not isinstance(targets, list):
+            raise ElabError(f"产品 {proj.get('name')} 的 targets 必须是列表")
+        out: list[dict] = []
+        seen: set[str] = set()
+        for t in targets:
+            if not isinstance(t, dict):
+                raise ElabError(f"产品 {proj.get('name')} 的 target 必须是映射")
+            tid = str(t.get("id") or "").strip()
+            chip = str(t.get("chip") or "").strip()
+            if not tid or not chip:
+                raise ElabError(
+                    f"产品 {proj.get('name')} 的 target 缺 id 或 chip：{t!r}")
+            if tid in seen:
+                raise ElabError(f"产品 {proj.get('name')} 的 target id 重复：{tid}")
+            seen.add(tid)
+            out.append(t)
+        top = str(proj.get("chip") or "").strip()
+        if out and top and top != str(out[0].get("chip") or ""):
+            raise ElabError(
+                f"产品 {proj.get('name')} 顶层 chip={top} 与 targets[0].chip="
+                f"{out[0].get('chip')} 冲突；只保留一个真相")
+        return out
+
+    def select_target(self, project: str, target_id: str | None = None) -> str | None:
+        """为当前进程选定一个 target；无 targets 的旧产品返回 None。"""
+        if project not in self.projects:
+            raise ElabError(f"未知项目：{project}")
+        targets = self.targets_of(self.projects[project])
+        if not targets:
+            if target_id:
+                raise ElabError(f"产品 {project} 没有 targets，不能指定 --target {target_id}")
+            self._target_selection.pop(project, None)
+            return None
+        if target_id is None:
+            if len(targets) > 1:
+                ids = ", ".join(str(t["id"]) for t in targets)
+                raise ElabError(
+                    f"产品 {project} 有 {len(targets)} 个 target，请用 --target 指定：{ids}")
+            target_id = str(targets[0]["id"])
+        if target_id not in {str(t["id"]) for t in targets}:
+            ids = ", ".join(str(t["id"]) for t in targets)
+            raise ElabError(f"产品 {project} 没有 target {target_id}（可选：{ids}）")
+        self._target_selection[project] = target_id
+        return target_id
+
+    def _apply_target(self, proj: dict, target_id: str | None) -> dict:
+        """把 target 的 chip / build / serial / monitor 合并进产品视图。"""
+        targets = self.targets_of(proj)
+        if not targets:
+            if target_id:
+                raise ElabError(f"产品 {proj.get('name')} 没有 targets")
+            return proj
+        if target_id is None:
+            if len(targets) > 1:
+                ids = ", ".join(str(t["id"]) for t in targets)
+                raise ElabError(
+                    f"产品 {proj.get('name')} 有 {len(targets)} 个 target，"
+                    f"请用 --target 指定：{ids}")
+            target_id = str(targets[0]["id"])
+        target = next((t for t in targets if str(t["id"]) == str(target_id)), None)
+        if target is None:
+            ids = ", ".join(str(t["id"]) for t in targets)
+            raise ElabError(
+                f"产品 {proj.get('name')} 没有 target {target_id}（可选：{ids}）")
+
+        merged = dict(proj)
+        merged["chip"] = str(target.get("chip") or "")
+        merged["_target_id"] = str(target["id"])
+        for key, value in target.items():
+            if key in ("id", "chip"):
+                continue
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = {**merged[key], **value}
+            else:
+                merged[key] = value
+        # 顶层 build.kind/source 仍然继承，target 只覆盖 work_dir 等局部键。
+        return merged
+
     # ── 插值 ─────────────────────────────────────────────────────
     def project_ctx(self, proj: dict) -> dict:
         """构造项目作用域插值上下文（已解析的绝对值）。"""
         root = to_fwd(self.resolve(proj["root"], {}))
         build = proj.get("build") or {}
-        ctx = {
-            "ELAB_ROOT": to_fwd(self.root),
+        ctx = dict(self.root_ctx())
+        ctx.update({
             "root": root,
             "name": proj.get("name", ""),
             "project_name": build.get("project_name", proj.get("name", "")),
-        }
-        # work_dir 可能自身引用 ${ELAB_ROOT}
+        })
+        # work_dir 可能自身引用 ${ELAB_ROOT} / ${ZEPHYR_ROOT}
         ctx["work_dir"] = to_fwd(self.resolve(build.get("work_dir", ""), ctx))
         return ctx
 
@@ -360,8 +514,12 @@ class Config:
             key = m.group(1)
             if key in ctx:
                 return str(ctx[key])
+            if key == "IDE_ROOT":
+                return to_fwd(self.ide_root)
+            if key == "ZEPHYR_ROOT":
+                return to_fwd(self.zephyr_root)
             if key == "ELAB_ROOT":
-                return to_fwd(self.root)
+                return to_fwd(self.ide_root)
             if key in os.environ:
                 return os.environ[key]
             return m.group(0)
@@ -382,14 +540,20 @@ class Config:
         return self.resolve(node, ctx)
 
     # ── 组合视图 ─────────────────────────────────────────────────
-    def resolved_project(self, name: str) -> dict:
-        """取项目并完成全部插值（含 host 派生值）。"""
+    def resolved_project(self, name: str, target_id: str | None = None) -> dict:
+        """取项目并完成全部插值（含 host 派生值）。
+
+        ``target_id`` 省略时使用 ``select_target`` 的选择；多 target 产品若
+        从未选择，会在这里报错并列出可选 id，而不是静默取第一个。
+        """
         if name not in self.projects:
             known = ", ".join(sorted(self.projects)) or "(无)"
             raise ElabError(f"未知项目：{name}（可选：{known}）")
-        proj = dict(self.projects[name])
-        ctx = self.project_ctx(proj)
-        proj = self.resolve_deep(proj, ctx)
+        raw = self._apply_target(
+            dict(self.projects[name]),
+            target_id if target_id is not None else self._target_selection.get(name))
+        ctx = self.project_ctx(raw)
+        proj = self.resolve_deep(raw, ctx)
         proj["_ctx"] = ctx
         return proj
 
@@ -450,7 +614,7 @@ class Host:
         #   .deps/venv、.deps/tools 全部如此）。不在这里展开，`host.cmake`
         #   这类属性就会把字面量漏给子进程。`raw` 保留未解析原样。
         self.raw = cfg.host
-        self.data = cfg.resolve_deep(cfg.host, {"ELAB_ROOT": to_fwd(cfg.root)})
+        self.data = cfg.resolve_deep(cfg.host, cfg.root_ctx())
         self._resolve_env()
 
     def _resolve_env(self):
@@ -662,5 +826,7 @@ class Host:
         if prepend:
             env["PATH"] = os.pathsep.join(prepend + [env.get("PATH", "")])
         env["ELAB_ARM_GCC_ROOT"] = self.gcc_root
-        env["ELAB_ROOT"] = to_fwd(self.cfg.root)
+        env["ELAB_ROOT"] = to_fwd(self.cfg.ide_root)
+        env["IDE_ROOT"] = to_fwd(self.cfg.ide_root)
+        env["ZEPHYR_ROOT"] = to_fwd(self.cfg.zephyr_root)
         return env

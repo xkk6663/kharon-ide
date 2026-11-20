@@ -1,4 +1,4 @@
-"""cockpit.api.routes.project —— 工程接入 / 模式切换 / 选目录。"""
+"""cockpit.api.routes.project —— 工程接入 / 选目录。"""
 
 from __future__ import annotations
 
@@ -49,9 +49,6 @@ def handle_post(h, u, qs):
         # 原生「选择文件夹」对话框：浏览器沙箱拿不到本地绝对路径，
         # 由同机运行的内核代开系统目录选择框（适配路径的唯一入口）。
         return pick_folder(h, h._body())
-    if u.path == "/api/mode":
-        # 一键切模式（classic ⇄ Zephyr）：换 host 事实源 + 换装配清单。
-        return switch_mode_route(h, h._body())
     if u.path == "/api/project":
         # 工程接入文件的命名与移除（左侧工程轨的「⋯」菜单）。
         return project_admin(h, h._body())
@@ -98,68 +95,6 @@ def pick_folder(h, body: dict):
     if not picked:
         return h._json({"cancelled": True}, 200)
     return h._json({"path": Path(picked).as_posix()}, 200)
-
-
-def switch_mode(h, body: dict):
-    """``POST /api/mode`` ``{mode: "<profile 名>"}`` —— 顶栏那个开关的后端。
-
-    切换的三条纪律，全都是"别让用户看到半切状态"：
-
-    ① **有活就拒**（409）：闭环在跑 / 调试会话开着 / 串口监视开着时一律不切。
-       它们都握着**当前 host 的工具句柄**（openocd/gdb/串口），中途换 host
-       等于让它们对着另一套事实继续跑 —— 症状是"每个动作都报工具找不到"，
-       而界面上却看不出配置已经换过。
-    ② **换完必须换到底**：``handler.cfg``（每个请求读它）、``mgr.cfg``（起 run）、
-       ``dbg.cfg``（开调试）三份引用一起换 + ``mgr.runs_dir`` 重算。
-       只换一份的症状最阴：面板用的是新 host，一按「跑闭环」子进程拿的还是旧 host。
-    ③ **runs 目录变了要说**：两个 host 若把 ``cockpit.runs_dir`` 指到不同地方，
-       切换后会自动创建空目录 —— 界面看起来"历史全没了"。所以不静默：
-       把新目录放进响应，前端提示里带上。
-    """
-    mode = str(body.get("mode") or "").strip()
-    if not mode:
-        raise ElabError("缺少 mode（装配清单名，如 web / kharon）")
-
-    active = h.mgr.list_active()
-    if active:
-        raise ElabError(
-            f"有闭环正在跑（run={active[0].get('run')}，"
-            f"步骤 {'/'.join(active[0].get('steps') or [])}）—— 等它结束再切模式")
-    # ★ 用 list() 而不是 get()：多会话下 get("") 返回 None（"缺省即 required"），
-    #   拿它当"没会话"会把两个开着的调试会话放过去。
-    open_sessions = h.dbg.list()
-    if open_sessions:
-        sess = open_sessions[0]
-        raise dbgsess_mod.DebugError(
-            "debug-busy",
-            f"调试会话打开中（{len(open_sessions)} 个，项目 {sess.plan.name}）"
-            f"—— 先关闭会话再切模式",
-            "点调试工作区「关闭」，或 DELETE /api/debug/session")
-    try:
-        mon = serialmon_mod.status() or {}
-    except Exception:                              # noqa: BLE001
-        mon = {}
-    if mon.get("active"):
-        raise ElabError(
-            f"串口监视开着（{mon.get('port') or '?'}）—— 先关闭再切模式"
-            f"（换模式会换主机事实源/串口默认参数）")
-
-    old_runs = h.mgr.runs_dir
-    new_cfg, summary = switch_mode(h.cfg, mode)
-    # ★ 三份引用一起换（见 ②）
-    type(h).cfg = new_cfg
-    h.mgr.cfg = new_cfg
-    h.dbg.cfg = new_cfg
-    new_runs = run_mod.runs_dir_for(new_cfg)
-    h.mgr.runs_dir = new_runs
-    return h._json({
-        "ok": True,
-        "mode": summary.get("id") or mode,
-        "profile": summary,
-        "host": to_fwd(new_cfg.host_path),
-        "runs_dir": to_fwd(new_runs),
-        "runs_dir_changed": to_fwd(new_runs) != to_fwd(old_runs),
-    })
 
 
 def project_admin(h, body: dict):

@@ -134,7 +134,7 @@ const modbusWs: WorkspaceDef = {
 /**
  * 矩阵工作区（Kharon）：多板并排对照。
  * 门禁来自**数据**：只有 Zephyr 工程（`archetype: zephyr`）才有 `matrix:` 语义，
- * 不给 classic 工程显示一个永远空的页 —— 那会稀释"这工具是干什么的"。
+ * 不给非 Zephyr 工程显示一个永远空的页 —— 那会稀释"这工具是干什么的"。
  */
 const matrixWs: WorkspaceDef = {
   id: "matrix",
@@ -147,21 +147,10 @@ const matrixWs: WorkspaceDef = {
     "矩阵工作区：同一 `matrix:` 组的工程会并排列出（FLASH / RAM / 耗时 / 结论）。",
 };
 
-/** west 工作区（Kharon）：模块树 / board 清单 / SDK 目标 / 最近构建事实（只读）。 */
-const westWs: WorkspaceDef = {
-  id: "west",
-  label: "工作区",
-  channel: "west",
-  steps: [],
-  dim: (card) => card?.archetype !== "zephyr",
-  dimReason: () => "west 工作区只对 Zephyr 工程开放",
-  emptyText: () => "west 工作区：模块树、board 清单、SDK 目标与最近一次构建的事实。",
-};
-
 /**
  * 构建面板（Kharon）：内存旭日图 / Kconfig / 设备树。
  *
- * 三份数据都在构建产物里，所以它只看 `archetype: zephyr` —— classic 工程
+ * 三份数据都在构建产物里，所以它只看 `archetype: zephyr` —— 非 Zephyr 工程
  * 即使点了也只会看到"没有 footprint"，那种空页比置灰更伤。
  * 顶栏的「用量报告」是它唯一的写动作（ram_report / rom_report 几十秒）。
  */
@@ -176,12 +165,27 @@ const dashWs: WorkspaceDef = {
     "构建面板：内存旭日图来自 ram.json/rom.json，Kconfig 来自 .config，设备树来自 zephyr.dts —— 都先要构建一次。",
 };
 
+/**
+ * 架构工作区（Kharon）：Board / APP / Product 三层拓扑。
+ * 只读事实来自 `/api/architecture`，不按工程是否 Zephyr 置灰 —— 它是驾驶舱的
+ * 分层地图，选中空工程时也要能看见板级真相和 APP 归属。
+ */
+const archWs: WorkspaceDef = {
+  id: "arch",
+  label: "架构",
+  channel: "arch",
+  steps: [],
+  dim: () => false,
+  dimReason: () => "",
+  emptyText: () => "架构工作区：板级真相、APP 目录与 Product×Target 映射。",
+};
+
 /** 静态工作区（顺序即导航顺序） */
 export const STATIC_WORKSPACES: WorkspaceDef[] = [
-  buildWs, dashWs, flashWs, serialWs, debugWs, matrixWs, westWs, modbusWs,
+  buildWs, archWs, dashWs, flashWs, serialWs, debugWs, matrixWs, modbusWs,
 ];
-/** 只有 Zephyr 工程才有产物的三个工作区（导航里按 archetype 过滤）。 */
-const ZEPHYR_ONLY = new Set<string>(["dash", "matrix", "west"]);
+/** 只有 Zephyr 工程才有产物的两个工作区（导航里按 archetype 过滤）。 */
+const ZEPHYR_ONLY = new Set<string>(["dash", "matrix"]);
 /**
  * 工具工作区（单一「工具」页，2026-10-08 二次收敛）：
  * 每个工具一个导航 Tab 的第一版实测 7 个 Tab 挤爆右列（用户截图：显示不全），

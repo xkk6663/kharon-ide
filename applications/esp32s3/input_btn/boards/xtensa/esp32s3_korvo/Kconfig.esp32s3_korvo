@@ -1,7 +1,0 @@
-# SPDX-License-Identifier: Apache-2.0
-
-config BOARD_ESP32S3_KORVO
-	select SOC_ESP32S3
-	select SOC_ESP32S3_PROCPU if BOARD_ESP32S3_KORVO_ESP32S3_PROCPU
-	help
-	  Custom ESP32-S3 board (Korvo carrier + S3 module).

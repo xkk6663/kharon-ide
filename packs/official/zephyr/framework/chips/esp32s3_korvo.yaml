@@ -1,0 +1,28 @@
+# packs/official/zephyr/framework/chips/esp32s3_korvo.yaml
+#
+# ESP32-S3 Korvo 自定义板（板级真相在
+# zephyr-workspace/kharon-boards/boards/espressif/esp32s3_korvo）。
+# 多核板：target 是三段 <board>/<soc>/<core>（procpu = 协议核，被 Zephyr 当主核）。
+
+id: esp32s3_korvo
+vendor: zephyr
+platform: framework
+part: ESP32-S3
+target: esp32s3_korvo/esp32s3/procpu
+core_name: Xtensa LX7
+
+serial:
+  baud: 115200
+
+debug:
+  gdb_key: gdb_zephyr_xtensa
+  addr2line_key: addr2line_zephyr_xtensa
+  # ESP 系不能用 xpack 那份 openocd：它没有 esp32s3 的 board 脚本
+  openocd_key: openocd_esp32
+  device: esp32s3
+
+flash:
+  # runner 名 = runners.yaml 的 flash-runner（esp32，不是 esptool 的包名 esp）
+  runner: esp32
+  # 烧录口：S3 原生 USB-Serial-JTAG（VID 303A/PID 1001）按项目 serial.port 解析
+  extra_args: ["--esp-device", "${serial_port}"]

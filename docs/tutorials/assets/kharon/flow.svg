@@ -14,7 +14,7 @@
   <rect x="24" y="68" width="932" height="62" rx="9" fill="#f1f5f9" stroke="#cbd5e1"/>
   <text x="40" y="90" font-size="11" fill="#64748b">输入只有三份 YAML（人只写这三份，不再写 launch.json / build 脚本）</text>
   <rect x="40" y="96" width="286" height="26" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
-  <text x="183" y="114" font-size="10.5" fill="#475569" text-anchor="middle">projects/kharon/f411_breath.yaml</text>
+  <text x="183" y="114" font-size="10.5" fill="#475569" text-anchor="middle">kharon-manifest/products/kharon/f411_breath.yaml</text>
   <rect x="340" y="96" width="286" height="26" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
   <text x="483" y="114" font-size="10.5" fill="#475569" text-anchor="middle">config/host.kharon + host.local</text>
   <rect x="640" y="96" width="300" height="26" rx="5" fill="#ffffff" stroke="#cbd5e1"/>

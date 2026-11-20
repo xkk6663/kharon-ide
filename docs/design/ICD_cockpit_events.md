@@ -266,34 +266,15 @@ open 自增** —— 前端发现它变化必须同时重置"行/字节"两个�
 5 MiB，到顶停录并标 `truncated`）—— 它是"证据"，与 console 留档（§3.5，会滚动）是
 两回事；录制内容**仍不进事件流**，也不写 run 的 `.jsonl`。
 
-### 3.8 工作区模式切换（`POST /api/mode`）—— 进程级切换，不发事件
+### 3.8 工作区模式切换（已删除）
 
-一份 `cockpit/profiles/<id>.yaml` 就是一个**工作区模式**（产品形态）：它决定
-左栏工程可见范围、右列工作区顺序与工具启停，还能声明 `host:` 指定"切进来换哪份
-主机事实源"。顶栏那个 `classic ⇄ zephyr` 开关就是它的全部界面。
+本仓只保留一份生效装配清单 `cockpit/profiles/kharon.yaml`，不提供 classic ⇄ Zephyr
+的运行期切换：
 
-| 方向 | 端点 / 字段 | 说明 |
-|---|---|---|
-| 读 | `GET /api/capabilities` → `meta.profile` | `id`（生效清单）、`label`/`desc`（按钮文案）、`modes[]`（全部可选，按 yaml `order:` 排） |
-| 写 | `POST /api/mode {mode:"<清单 stem>"}` | 200 返回 `{mode, profile, host, runs_dir, runs_dir_changed}` |
-
-**它切的是进程级环境**（这一点必须写进契约，否则前端会误以为只是个本地开关）：
-
-- `ELAB_HOST` ← 目标清单的 `host:`（空 = 退回启动时那份）：工具链 / 探针 / Zephyr
-  工作区 / 串口默认**全都跟着换**，派生进程（`elab run`、openocd、gdb、west）天然继承；
-- `ELAB_PROFILE` ← 目标清单的 stem：装配清单本身（优先级高于 host 里那份静态 `profile:`）。
-
-因此三条约束是**契约级**的，不是实现细节：
-
-1. **有活就拒**（400，指名道姓）：闭环在跑 / 调试会话开着 / 串口监视开着时不许切 ——
-   它们握着按旧 host 解析出来的工具句柄，中途换 host 会让每个动作都报"工具找不到"；
-2. **切换后必须重拉** `capabilities` + `projects`：工程集合可能整个换掉
-   （`projects.archetype` 过滤），旧选中在新模式下不一定存在；
-3. **不持久化**：运行期切换只活在本进程，重启后仍由 `host: profile` 决定 ——
-   否则 `kharon.cmd` 与 `cockpit.cmd` 各自的默认会被上一次点击改掉。
-
-不发任何事件：与 §3.5/§3.6 同理，它不是一次 run；要留痕走日志
-（`sys.stderr` 的 `[cockpit]` 行）与下一次 `run/start` 里的 `doctor` 证据。
+- `POST /api/mode` 已删除；
+- `GET /api/capabilities → meta.profile` 只返回生效清单本身（`id/name/label/desc/path/host/
+  available/workspaces/tools/projects`），不再输出 `modes[]`；
+- 换产品线不是切模式，而是另起仓库定义入口与 provider。
 
 ---
 

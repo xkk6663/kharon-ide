@@ -18,7 +18,7 @@ debug:
   gdb_key: gdb_zephyr_arm
   addr2line_key: addr2line_zephyr_arm
   openocd_key: openocd
-  openocd_config: applications/stm32f1/common/dap_link_openocd.cfg
+  openocd_config: kharon-boards/boards/st/stm32f103_mini/support/openocd.cfg
   device: STM32F103C8
 
 flash:

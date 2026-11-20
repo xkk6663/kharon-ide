@@ -46,6 +46,7 @@ def _add_common(p):
     #   None 会把全局值覆盖掉。没给时属性不存在，`_cfg` 的 getattr 兜底为 None。
     p.add_argument("--root", default=argparse.SUPPRESS,
                    help="覆盖 ELAB_ROOT（默认本文件所在目录）；写在子命令前后均可")
+    p.add_argument("--target", help="多 target 产品选择 target id（如 korvo1 / s3）")
     p.add_argument("--json", action="store_true", help="机器可读输出")
 
 
@@ -177,6 +178,8 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("-p", "--project", required=True, help="项目名")
     p.add_argument("--steps", help=f"逗号分隔，默认 {','.join(run_mod.DEFAULT_STEPS)}"
                                    f"（可选：{','.join(run_mod.ALL_STEPS)}）")
+    p.add_argument("--all-targets", action="store_true",
+                   help="按顺序跑产品的全部 target（CI 用，失败即停）")
     p.add_argument("--emit-events", action="store_true",
                    help="把事件写成只追加 JSONL（驾驶舱跟读它；见 docs/ICD_cockpit_events.md）")
     p.add_argument("--events-dir", help="覆盖运行产物目录（默认 .work/.cockpit/runs）")
@@ -355,6 +358,13 @@ def main(argv=None) -> int:
 def _dispatch(args) -> int:
     cfg = _cfg(args)
 
+    # 产品 target 选择：--target 一旦给出，本进程内该产品的 chip / work_dir /
+    # serial 都按 target 解析；旧单 chip 产品行为不变。
+    target = getattr(args, "target", None)
+    project = getattr(args, "project", None)
+    if target and project:
+        cfg.select_target(project, target)
+
     if args.cmd == "list":
         return cmd_list(cfg, args)
     if args.cmd == "doctor":
@@ -412,7 +422,13 @@ def cmd_list(cfg: Config, args) -> int:
             for c in _uniq_chips(cfg)
         ],
         "projects": [
-            {"name": p.get("name"), "chip": p.get("chip"), "archetype": p.get("archetype"),
+            {"name": p.get("name"),
+             "chip": (p.get("chip") or ((p.get("targets") or [{}])[0] or {}).get("chip")),
+             "targets": [
+                 {"id": t.get("id"), "chip": t.get("chip")}
+                 for t in (p.get("targets") or [])
+             ],
+             "archetype": p.get("archetype"),
              "root": p.get("root")}
             for p in cfg.projects.values()
         ],
@@ -446,7 +462,11 @@ def cmd_list(cfg: Config, args) -> int:
         print(f"  {c['ref']:<26} cpu={c['cpu']:<12} fpu={c['fpu']:<6} {c['part']}")
     print("projects:")
     for p in data["projects"]:
-        print(f"  {p['name']:<14} {p['archetype']}-class  chip={p['chip']:<24} {p['root']}")
+        tgt = ""
+        if p.get("targets"):
+            tgt = "  targets=" + ",".join(
+                f"{t.get('id')}:{t.get('chip')}" for t in p["targets"])
+        print(f"  {p['name']:<14} {p['archetype']}-class  chip={str(p['chip'] or '-'):<24} {p['root']}{tgt}")
     return 0
 
 
@@ -946,6 +966,49 @@ def cmd_run(cfg: Config, args) -> int:
     （inconclusive，例如串口没收到约定关键字）。三态各有码 —— 脚本不能把
     "没验证"当成"通过"。
     """
+    # ★ `--all-targets`：同一产品按 target 顺序跑，失败即停。CI 用它，
+    #   本地仍只跑单个 target（不全量编译）。
+    if getattr(args, "all_targets", False):
+        if getattr(args, "target", None):
+            raise ElabError("--all-targets 与 --target 不能同时使用")
+        targets = cfg.targets_of(cfg.projects[args.project])
+        if not targets:
+            raise ElabError(f"产品 {args.project} 没有 targets，不能用 --all-targets")
+        out: list[dict] = []
+        codes: list[int] = []
+        for t in targets:
+            tid = str(t["id"])
+            cfg.select_target(args.project, tid)
+            if getattr(args, "dry_run", False):
+                pv = run_mod.preview(cfg, args.project, steps=args.steps,
+                                     clean=args.clean, jobs=args.jobs)
+                pv["target"] = tid
+                out.append(pv)
+                codes.append(0)
+                if not args.json:
+                    print()
+                    print(run_mod.render_preview(pv))
+                continue
+            res = run_mod.run(
+                cfg, args.project,
+                steps=args.steps, clean=args.clean, jobs=args.jobs,
+                verbose=args.verbose, actor=args.actor,
+                emit_events=args.emit_events, run_id=args.run_id,
+                echo=not args.quiet, runs_dir=args.events_dir,
+                keep_going=args.keep_going,
+            )
+            res["target"] = tid
+            out.append(res)
+            codes.append({"ok": 0, "failed": 1, "inconclusive": 2}.get(
+                res.get("verdict") or ("ok" if res["ok"] else "failed"), 1))
+        if args.json:
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+        elif not getattr(args, "dry_run", False):
+            for res in out:
+                print()
+                print(run_mod.render(res))
+        return max(codes) if codes else 0
+
     # ★ `--dry-run` 走**另一条路**：预览是只读的，绝不发射事件、绝不写工作目录。
     #   退出码恒为 0（"能不能预览出来"不是"预览出来的东西能不能跑通"）。
     if getattr(args, "dry_run", False):

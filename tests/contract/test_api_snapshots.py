@@ -79,6 +79,9 @@ def stable(payload):
 
     这两个数组的元素 schema 由各自单元测试覆盖；这里关心的是
     "字段有没有被删/改名"，不是"这台机器插了什么"。
+
+    ``provider.reasons`` 同理：它随本机串口数量变化（``auto`` 在插了
+    F411 调试口 + 另一块板时会报歧义），不是接口契约字段。
     """
     out = copy.deepcopy(payload)
     serial = out.get("serial")
@@ -88,6 +91,12 @@ def stable(payload):
     if isinstance(packs, dict):
         packs["installed"] = []
         packs["chips"] = []
+    for project in out.get("projects") or []:
+        if not isinstance(project, dict):
+            continue
+        provider = project.get("provider")
+        if isinstance(provider, dict):
+            provider["reasons"] = []
     return out
 
 
@@ -141,7 +150,7 @@ class ApiSnapshotTest(unittest.TestCase):
             "projects": [c for c in cards.get("projects") or []
                          if c.get("name") == SNAPSHOT_PROJECT],
         }
-        self._assert_snapshot("api_projects", payload, "GET /api/projects")
+        self._assert_snapshot("api_projects", stable(payload), "GET /api/projects")
 
     def test_plan_shape(self) -> None:
         from elab import run as run_mod

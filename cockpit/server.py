@@ -256,11 +256,8 @@ class CockpitServer(ThreadingHTTPServer):
 def make_server(cfg: Config, *, host: str = HOST, port: int = DEFAULT_PORT,
                 dist: Path | None = None, verbose: bool = False,
                 log=print) -> CockpitServer:
-    # ★ 这里才是"进程启动"的权威时刻（main → make_server）：把当前 ELAB_HOST
-    #   记成模式切换的回落基线。放在 import 期会让测试/插件复用同一进程时
-    #   拿到别人设的值 —— 那正是"切回去怎么不是我启动时那份"的由来。
-    global _LAUNCH_HOST_ENV
-    _LAUNCH_HOST_ENV = os.environ.get("ELAB_HOST", "")
+    # ★ 进程启动时不再记录“模式切换的回落基线”：本仓只有一份 kharon.yaml，
+    #   运行期也没有切换端点。ELAB_HOST 只在本进程启动时决定装配清单。
     mgr = RunManager(cfg, log=log)
     dbg = DebugManager(cfg, mgr, log=log)
     pkg_jobs = PkgJobManager()
@@ -277,7 +274,7 @@ def make_server(cfg: Config, *, host: str = HOST, port: int = DEFAULT_PORT,
         new_cfg = Config(cfg.root)
         handler.cfg = new_cfg
         mgr.cfg = new_cfg
-        dbg.cfg = new_cfg        # ③ 与 /api/mode 同一条纪律：三份引用一起换
+        dbg.cfg = new_cfg        # ③ 三份引用一起换，别让面板和调试器读两份配置
     pkg_jobs.bind(_reload_pack_cfg)
     # ★ 开箱即用：全新环境（packs/installed 为空）时自动装内置官方包（st/stm32），
     #   让「已安装」页签首屏就有内容。已有任何已装包时不动（不覆盖用户卸载）。

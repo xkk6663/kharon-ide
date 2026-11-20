@@ -5,9 +5,10 @@
 > 主站与面板：**完全没换**——`services/elab/modbus.py` 编解码 + `modbusmaster.py` 事务 + 驾驶舱 Modbus 工作区
 > 本文的帧、计数、截图都来自本轮真机
 >
-> **现状校准（2026-11-19）**：`applications/stm32f4/f411_modbus` 与
-> `applications/stm32f4/f411_breath` 同属当前 F411 主线；classic 对照篇在旧仓
-> `docs/tutorials/09`，本仓只保留同一个 Modbus 面板与主站实现。
+> **现状校准（2026-11-20）**：`zephyr-workspace/applications/stm32f4/f411_modbus` 与
+> `f411_breath` 同属当前 F411 主线；产品登记在
+> `zephyr-workspace/kharon-manifest/products/kharon/f411_modbus.yaml`，点表与产品 yaml 同目录。
+> classic 对照篇在旧仓 `docs/tutorials/09`；双根与分层见 [15](./15-Zephyr工作区双根与板级APP产品.md)。
 
 ---
 
@@ -265,7 +266,7 @@ Zephyr 完全一致——因为校验逻辑在服务端，两边都按规范实�
 |---|---|---|
 | `[boot] modbus0 not found (-1)` | overlay 没生效，或 `modbus0` 节点不在 `&usart1` 下 | 看构建产物 `zephyr.dts` 里有没有 `modbus0` |
 | 主站一直超时，但线是通的 | init 之后还有 printk / LOG 输出，帧被撞碎 | `CONFIG_LOG=n`，协议起来后不再打印 |
-| 点表读出来是空的（0 个点） | 点表放错目录 | 必须与工程 yaml **同目录同名**：`projects/kharon/f411_modbus.modbus.json` |
+| 点表读出来是空的（0 个点） | 点表放错目录 | 必须与工程 yaml **同目录同名**：`kharon-manifest/products/kharon/f411_modbus.modbus.json` |
 | 只有自己的请求有回应，别的从站地址没反应 | `unit_id` 不一致 | 固件 `UNIT_ID`、点表 `unit_id`、面板「从站」三个数要一样 |
 | `monitor` 报「一个字节都没收到」 | 单口方案 + 启动窗口太窄 | 见 §5：把横幅分开打印，留出 1 s 量级的窗口 |
 | `monitor` 报 `ERROR_ACCESS_DENIED` | **驾驶舱面板还开着这个串口会话**（独占设计） | 面板点「关闭会话」，或先关驾驶舱再跑 CLI |
@@ -289,7 +290,7 @@ case 2u:
  *    现在还要拿它做数值比较，所以单独抽出来，避免把位模式和浮点值混用 */
 static float temp_celsius(void) { return temp_tab[uptime_s() % 8u]; }
 
-/* 3) 点表加一个点（projects/kharon/f411_modbus.modbus.json），并放进 bits 组 */
+/* 3) 点表加一个点（kharon-manifest/products/kharon/f411_modbus.modbus.json），并放进 bits 组 */
 { "name": "di_temp_alarm", "fc": 2, "address": 2, "type": "bit", "plot": true }
 ```
 

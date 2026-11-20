@@ -5,7 +5,8 @@
 #
 # 三条纪律：
 #   1. 只写事实（某工具装在哪），不写"怎么编译"——那是 provider 的事。
-#   2. 一律用正斜杠 + 仓库内相对路径（${ELAB_ROOT}），换机器只改 host.local.yaml。
+#   2. 一律用正斜杠；IDE 资产用 ${IDE_ROOT}，Zephyr 资产用 ${ZEPHYR_ROOT}，
+#      换机器只改 host.local.yaml。
 #   3. 命令模板一律 `python -m west`，不用 `west.exe`：
 #      venv 的 console-script 内嵌了创建时的绝对路径，目录一搬就静默失效。
 
@@ -14,27 +15,27 @@ host:
   exec_ext: .exe
 
 tools:
-  # 构建三件套（上游 .tools/ 搬进 .deps/ 后的位置）
-  west_python: { path: ${ELAB_ROOT}/.deps/venv/Scripts/python.exe }
-  cmake: { path: ${ELAB_ROOT}/.deps/tools/cmake/cmake-3.30.2-windows-x86_64/bin/cmake.exe }
-  ninja: { path: ${ELAB_ROOT}/.deps/tools/ninja/ninja.exe }
-  ccache: { path: ${ELAB_ROOT}/.deps/tools/ccache/ccache-4.14.3-windows-x86_64/ccache.exe }
+  # 构建三件套（IDE 侧 .deps/）
+  west_python: { path: ${IDE_ROOT}/.deps/venv/Scripts/python.exe }
+  cmake: { path: ${IDE_ROOT}/.deps/tools/cmake/cmake-3.30.2-windows-x86_64/bin/cmake.exe }
+  ninja: { path: ${IDE_ROOT}/.deps/tools/ninja/ninja.exe }
+  ccache: { path: ${IDE_ROOT}/.deps/tools/ccache/ccache-4.14.3-windows-x86_64/ccache.exe }
 
   # ── Zephyr 工作区（west 事实）──────────────────────────────
   zephyr:
-    workspace: ${ELAB_ROOT}/west              # west topdir（provider 的 cwd 必须是它）
-    base: ${ELAB_ROOT}/west/zephyr            # ZEPHYR_BASE
+    workspace: ${ZEPHYR_ROOT}                 # west topdir（provider 的 cwd 必须是它）
+    base: ${ZEPHYR_ROOT}/zephyr               # ZEPHYR_BASE
     sdk: null                                 # ← host.local.yaml（ZEPHYR_SDK_INSTALL_DIR）
-    venv_scripts: ${ELAB_ROOT}/.deps/venv/Scripts
-    ccache_dir: ${ELAB_ROOT}/.deps/ccache
-    # 自研板 = Zephyr module（真相在 zephyr_modules/elab-boards/，经
+    venv_scripts: ${IDE_ROOT}/.deps/venv/Scripts
+    ccache_dir: ${IDE_ROOT}/.deps/ccache
+    # 自研板 = Zephyr module（真相在 ZEPHYR_ROOT/kharon-boards/，经
     # EXTRA_ZEPHYR_MODULES 接入构建与 west boards）
-    boards_local: ${ELAB_ROOT}/zephyr_modules/elab-boards/boards
+    boards_local: ${ZEPHYR_ROOT}/kharon-boards/boards
     jobs: "8"
     # PATH 前置用的**目录**（env_prepend_path 只接受目录，不能传 exe 路径）
-    cmake_bin_dir: ${ELAB_ROOT}/.deps/tools/cmake/cmake-3.30.2-windows-x86_64/bin
-    ninja_bin_dir: ${ELAB_ROOT}/.deps/tools/ninja
-    ccache_bin_dir: ${ELAB_ROOT}/.deps/tools/ccache/ccache-4.14.3-windows-x86_64
+    cmake_bin_dir: ${IDE_ROOT}/.deps/tools/cmake/cmake-3.30.2-windows-x86_64/bin
+    ninja_bin_dir: ${IDE_ROOT}/.deps/tools/ninja
+    ccache_bin_dir: ${IDE_ROOT}/.deps/tools/ccache/ccache-4.14.3-windows-x86_64
     gnu_bin_dir: null                         # ← host.local.yaml
 
   # ── 调试器：一条链对应一种架构，芯片侧只写键名 ──────────────
@@ -63,8 +64,8 @@ tools:
 # 只把 zephyr 那一支挂进来（classic 的 provider 走 installed）。
 providers:
   roots:
-    - ${ELAB_ROOT}/providers/installed
-    - ${ELAB_ROOT}/providers/official/zephyr
+    - ${IDE_ROOT}/providers/installed
+    - ${IDE_ROOT}/providers/official/zephyr
 
 # 驾驶舱装配：kharon.yaml（工作区集合 + 只显示 zephyr 工程）。
 profile: kharon

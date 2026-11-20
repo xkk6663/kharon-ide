@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from elab.core.config import Config, ElabError, Host, to_fwd
+from elab.core import paths as core_paths
 from elab.workflow.doctor import parse_ld_memory
 
 # ── 证据级别（rank 越小越权威）────────────────────────────────────
@@ -939,6 +940,13 @@ def default_name(p: Probe) -> str:
 
 def _root_expr(cfg: Config, p: Probe) -> str:
     rp = Path(p.root)
+    zroot = getattr(cfg, "zephyr_root", None)
+    if zroot is not None:
+        try:
+            rel = rp.relative_to(Path(zroot))
+            return f"${{ZEPHYR_ROOT}}/{to_fwd(rel)}"
+        except ValueError:
+            pass
     try:
         rel = rp.relative_to(cfg.root)
         return f"${{ELAB_ROOT}}/{to_fwd(rel)}"
@@ -1200,7 +1208,7 @@ def render(cfg: Config, p: Probe, name: str) -> str:
 def write(cfg: Config, p: Probe, *, name: str = "", force: bool = False,
           check: bool = False, log=print) -> dict:
     name = name or default_name(p)
-    out = cfg.root / "projects" / f"{name}.yaml"
+    out = core_paths.products_dir(cfg) / f"{name}.yaml"
     text = render(cfg, p, name)
 
     if p.tier == "T3":

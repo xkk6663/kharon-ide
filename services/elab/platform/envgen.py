@@ -28,6 +28,8 @@ from elab.core.config import Config, ElabError, to_fwd
 PROVIDER_REF = "zephyr/west"
 _HOST_REF = re.compile(r"\$\{host:([^}]+)\}")
 _ELAB_ROOT_REF = "${elab_root}"
+_IDE_ROOT_REF = "${ide_root}"
+_ZEPHYR_ROOT_REF = "${zephyr_root}"
 
 
 def _host_value(cfg: Config, key: str) -> str:
@@ -44,7 +46,9 @@ def _expand(cfg: Config, text) -> str:
     """展开 ``${elab_root}`` 与 ``${host:...}``；仍未解析的模板 → 报错。"""
     s = str(text)
     for _ in range(10):
-        new = s.replace(_ELAB_ROOT_REF, to_fwd(Path(cfg.root)))
+        new = s.replace(_ELAB_ROOT_REF, to_fwd(Path(cfg.ide_root)))
+        new = new.replace(_IDE_ROOT_REF, to_fwd(Path(cfg.ide_root)))
+        new = new.replace(_ZEPHYR_ROOT_REF, to_fwd(Path(cfg.zephyr_root)))
         new = _HOST_REF.sub(lambda m: _host_value(cfg, m.group(1)), new)
         if new == s:
             break

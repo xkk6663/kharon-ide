@@ -84,6 +84,8 @@ function groupByChip(cards: ProjectCard[]): ChipGroup[] {
 export interface ProjectsRailProps {
   cards: ProjectCard[];
   selected: string;
+  /** 当前选中的 target（多 target 产品；空 = 旧单 chip） */
+  selectedTarget?: string;
   onSelect: (name: string) => void;
   caps: Capabilities | null;
   /** 有 run 在跑时禁用切换（避免"看着 A 的日志、实际跑的是 B"） */
@@ -111,6 +113,7 @@ export interface ProjectsRailProps {
 export function ProjectsRail({
   cards,
   selected,
+  selectedTarget,
   onSelect,
   caps,
   locked,
@@ -268,6 +271,11 @@ export function ProjectsRail({
           <Tag tone={p.archetype === "A" ? "blue" : "green"} mono dense>
             {p.chip || "未指定芯片"}
           </Tag>
+          {(p.targets?.length ?? 0) > 1 ? (
+            <Tag dense tone="violet" mono title={`可选 target：${p.targets?.map((t) => t.id).join(" / ")}`}>
+              {(isSel && selectedTarget ? selectedTarget : p.target) || ""} · {p.targets?.length} targets
+            </Tag>
+          ) : null}
           <Tag dense tone="neutral">
             {p.archetype ? `${p.archetype} 类` : "形态未声明"}
           </Tag>

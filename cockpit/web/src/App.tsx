@@ -14,7 +14,7 @@ import {
   useRun,
 } from "./store/runStore";
 import { cycleTheme, useTheme, type ThemeMode } from "./store/themeStore";
-import { LIMITS, setFontScale, setWorkspace, useLayout } from "./store/layoutStore";
+import { LIMITS, getLayout, maxFor, setFontScale, setWidth, setWorkspace, useLayout } from "./store/layoutStore";
 import { AppFrame } from "./AppFrame";
 import { ProjectsRail } from "./rails/ProjectsRail";
 import { StageRail, fullLoopSteps } from "./rails/StageRail";
@@ -23,7 +23,6 @@ import { PacksView } from "./rails/PacksView";
 import { Button } from "./primitives/Button";
 import { Pill } from "./primitives/Tag";
 import { Tooltip } from "./primitives/Tooltip";
-import { SegmentedTabs } from "./primitives/SegmentedTabs";
 import { workspacesFor } from "./workspaces";
 import { IconAlert, IconChip, IconMoon, IconMonitor, IconSun, IconTerminal } from "./icons";
 import s from "./App.module.css";
@@ -78,12 +77,12 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState("");
+  /** 当前产品的 target（多 target 产品；空串 = 旧单 chip 产品 / 未声明） */
+  const [selectedTarget, setSelectedTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const [conn, setConn] = useState<"idle" | "connecting" | "open" | "reconnecting" | "dead">("idle");
   /** 芯片适配包视图（市场 / 已安装；与 DSH 面板同形）。 */
   const [packsOpen, setPacksOpen] = useState(false);
-  /** 正在切工作区模式（classic ⇄ Zephyr）：期间按钮不再收点击，避免连点切出半成品。 */
-  const [modeBusy, setModeBusy] = useState(false);
   // ★ 工作区化瘦身（2026-10-08）：autoScroll → EvidenceRail 本地态；
   //   clean/jobs → StageRail 本地态（随 onRunAll 上交）；波特率覆写与串口手写
   //   → 串口工作区本地态。App 只留连接/目录/选中/run 编排 —— SSE 编排
@@ -91,6 +90,9 @@ export default function App() {
 
   const streamRef = useRef<StreamHandle | null>(null);
   const selectedRef = useRef("");
+  const selectedTargetRef = useRef("");
+  /** 目录快照：selectProject 读 target 时不能依赖 catalog state，否则 loadAll 会自激 */
+  const catalogRef = useRef<ProjectsResponse | null>(null);
   /** 已跟随过的 agent run id：只跟"新出现"的，不每一拍把人手动切走的视图拽回来。 */
   const followedRunsRef = useRef<Set<string>>(new Set());
   /**
@@ -172,10 +174,22 @@ export default function App() {
   }, []);
 
   const selectProject = useCallback(
-    async (name: string) => {
+    async (name: string, target?: string) => {
       if (!name) return;
+      const card = catalogRef.current?.projects.find((p) => p.name === name);
+      const valid = (id: string) => !!id && (card?.targets ?? []).some((t) => t.id === id);
+      const keep = name === selectedRef.current && valid(selectedTargetRef.current)
+        ? selectedTargetRef.current
+        : "";
+      const chosen = target
+        || keep
+        || card?.target
+        || card?.targets?.[0]?.id
+        || "";
       selectedRef.current = name;
+      selectedTargetRef.current = chosen;
       setSelected(name);
+      setSelectedTarget(chosen);
       closeStream();
       resetRun();
       logs.clearAll();
@@ -217,6 +231,7 @@ export default function App() {
         //   仍能画出界面但数据错位（内存表盘永远 0%），极难排查（§17 的教训）。
         await assertSchema(c);
         const p = await api.projects();
+        catalogRef.current = p;
         setCaps(c);
         setCatalog(p);
         setFatal(null);
@@ -293,6 +308,7 @@ export default function App() {
           steps: steps as StepId[] | undefined,
           clean: opts?.clean || undefined,
           jobs: opts?.jobs ?? undefined,
+          target: selectedTargetRef.current || undefined,
         });
         closeStream();
         resetRun();
@@ -327,6 +343,44 @@ export default function App() {
     },
     [selectProject],
   );
+
+  /** 架构视图选中 Product×Target：复用工程选择，target 随之后所有 plan/run 走。 */
+  const onPickTarget = useCallback(
+    (project: string, target: string) => {
+      void selectProject(project, target);
+    },
+    [selectProject],
+  );
+
+  /**
+   * 工作区切换：架构页是“全局拓扑”，进页时把证据轨撑到可用上限，
+   * 离开时还原用户原来的宽度。否则 470px 的右栏塞不下 Board/APP/Product。
+   */
+  const archPrevEvidence = useRef<number | null>(null);
+  const onWorkspace = useCallback((ws: string) => {
+    if (ws === "arch") {
+      if (archPrevEvidence.current === null) archPrevEvidence.current = getLayout().evidence;
+      setWidth("evidence", maxFor("evidence", getLayout()));
+    } else if (archPrevEvidence.current !== null) {
+      setWidth("evidence", archPrevEvidence.current);
+      archPrevEvidence.current = null;
+    }
+    setWorkspace(ws);
+  }, []);
+
+  /** 刷新后直接落在 arch 时也要展开；离开 arch 的兜底路径（越界 effect）也在这里还原。 */
+  useEffect(() => {
+    if (layout.ws === "arch") {
+      if (archPrevEvidence.current !== null) return;
+      archPrevEvidence.current = layout.evidence;
+      setWidth("evidence", maxFor("evidence", layout));
+      return;
+    }
+    if (archPrevEvidence.current !== null) {
+      setWidth("evidence", archPrevEvidence.current);
+      archPrevEvidence.current = null;
+    }
+  }, [layout.ws]);
 
   /**
    * 一键适配写入成功后的收尾（M5.6）：刷新目录（让新 `projects/<name>.yaml`
@@ -377,59 +431,12 @@ export default function App() {
   );
 
   /**
-   * 一键切工作区模式（classic ⇄ Zephyr）。
+   * 工作区越界兜底：当前 Tab 在新工程 / 新能力集下不存在时落回「构建」。
    *
-   * ★ 这是**后端状态**，不是本地开关：后端会改自己的 `ELAB_HOST` /
-   *   `ELAB_PROFILE`，之后起的 run 子进程与调试会话都跟着换一套工具链。
-   *   所以顺序必须是"先让后端切成功 → 再清本地现场 → 重拉目录"，反了就会出现
-   *   "界面已经是 Zephyr、点跑闭环却还在用 classic 的 host"。
-   *
-   * ★ 清现场不能省：两个模式的**工程集合不一样**（classic 看全部，
-   *   Zephyr 只看 `archetype: zephyr`），旧选中在新模式下必然不存在；
-   *   接着 `loadAll(true)` 会落到新列表的第一个工程。
-   */
-  const onMode = useCallback(
-    async (mode: string) => {
-      const cur = caps?.meta?.profile?.id ?? "";
-      if (!mode || mode === cur || modeBusy) return;
-      if (run.status === "running") {
-        setNotice("有闭环正在跑 —— 等它结束再切模式（换模式会换工具链）");
-        return;
-      }
-      setModeBusy(true);
-      setNotice(null);
-      try {
-        const res = await api.setMode(mode);
-        selectedRef.current = "";
-        followedRunsRef.current.clear();
-        closeStream();
-        resetRun();
-        logs.clearAll();
-        await loadAll(true);
-        const label = res.profile?.label || mode;
-        const first = res.profile?.projects?.archetype?.length
-          ? `，只看 ${res.profile.projects.archetype.join(" / ")} 工程`
-          : "，全部工程可见";
-        setNotice(
-          `已切到 ${label} 模式${first}` +
-            (res.runs_dir_changed ? `；运行留档目录改为 ${res.runs_dir}` : ""),
-        );
-      } catch (e) {
-        setNotice(`切换模式失败：${errmsg(e)}`);
-      } finally {
-        setModeBusy(false);
-      }
-    },
-    [caps, modeBusy, run.status, closeStream, loadAll],
-  );
-
-  /**
-   * 工作区越界兜底：当前 Tab 在新模式/新工程下不存在时落回「构建」。
-   *
-   * ★ 典型场景：在 Zephyr 模式下停在「矩阵」，切回 classic —— 那张页从导航里
-   *   消失了（classic 没有 matrix 语义），而持久化的 `layout.ws` 还是 "matrix"。
-   *   只靠 `EvidenceRail` 的 `?? all[0]` 会"显示构建页、记住矩阵页"，下次切回
-   *   Zephyr 又莫名其妙跳走。这里把它落**实**。
+   * ★ 典型场景：停在「架构」后切到一个非 Zephyr 工程 —— `arch` 不在该工程
+   *   可见工作区里，而持久化的 `layout.ws` 还是 "arch"。只靠 `EvidenceRail`
+   *   的 `?? all[0]` 会"显示构建页、记住架构页"，下次切回 Zephyr 又莫名跳走。
+   *   这里把它落**实**。
    */
   useEffect(() => {
     if (!catalog) return;
@@ -446,8 +453,6 @@ export default function App() {
    * ★ 只有一份清单时不渲染（单产品部署不该多一个永远只有一项的按钮）；
    *   也不按 id 判断"谁是 Zephyr"—— 加第三个产品只需加一份 yaml。
    */
-  const modes = caps?.meta?.profile?.modes ?? [];
-  const activeMode = caps?.meta?.profile?.id ?? caps?.meta?.profile?.name ?? "";
 
   if (fatal) {
     return (
@@ -470,35 +475,6 @@ export default function App() {
   const header = (
     <>
       <span className={s.brand}>elab cockpit</span>
-      {modes.length > 1 ? (
-        <Tooltip
-          side="bottom"
-          tip={
-            modeBusy
-              ? "正在切换工作区…"
-              : run.status === "running"
-                ? "有闭环正在跑 —— 结束后可切换"
-                : "工作区模式：切换 = 换一套主机事实源 + 工程可见范围"
-          }
-        >
-          <span className={[s.modeSwitch, modeBusy ? s.modeBusy : ""].filter(Boolean).join(" ")}>
-            <SegmentedTabs
-              size="sm"
-              value={activeMode}
-              onChange={(id) => void onMode(id)}
-              tabs={modes.map((m) => ({
-                id: m.id,
-                label: m.label,
-                // host 文件缺失 = 这个模式在本机装配不全：置灰（仍可点，点了会给出原因）
-                dim: m.host_exists === false,
-                title:
-                  (m.desc ? `${m.label}：${m.desc}` : `切换到 ${m.label} 工作区`) +
-                  (m.host_exists === false ? `（主机文件缺失：${m.host}）` : ""),
-              }))}
-            />
-          </span>
-        </Tooltip>
-      ) : null}
       <Pill tone={conn === "open" ? "green" : conn === "idle" ? "neutral" : conn === "dead" ? "red" : "blue"}>
         {conn === "idle" ? "空闲"
           : conn === "open" ? "已连接"
@@ -572,6 +548,7 @@ export default function App() {
           <ProjectsRail
             cards={catalog?.projects ?? []}
             selected={selected}
+            selectedTarget={selectedTarget}
             onSelect={onSelect}
             caps={caps}
             locked={run.status === "running"}
@@ -583,6 +560,7 @@ export default function App() {
         stage={
           <StageRail
             card={card}
+            target={selectedTarget}
             run={run}
             caps={caps}
             busy={busy}
@@ -599,9 +577,11 @@ export default function App() {
             running={run.status === "running"}
             onRunSteps={(steps: string[]) => void startRun(steps)}
             serialProject={selected}
+            target={selectedTarget}
+            onPickTarget={onPickTarget}
             serialPort={serialPort}
             ws={layout.ws}
-            onWs={setWorkspace}
+            onWs={onWorkspace}
           />
         }
         compactSelector={

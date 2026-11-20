@@ -17,6 +17,15 @@ zephyr:
   commit: 34e025569cbb27660b71db809627c3a7402e2111
   # 板级 module 的真相（不在 zephyr 树内另存副本）
   boards_module: zephyr_modules/elab-boards
+  # `--pinned` 通道只拉这 6 个模块（与旧仓环境自举实测一致）；
+  # `learning` 通道不看这份清单，直接 `west update` 全量。
+  pinned_modules:
+    - hal_espressif
+    - hal_stm32
+    - cmsis_6
+    - mbedtls
+    - tf-psa-crypto
+    - mcuboot
 
 projects:
   - {name: acpica, path: modules/lib/acpica, revision: 8d24867bc9c9d81c81eeac59391cda59333affd4}

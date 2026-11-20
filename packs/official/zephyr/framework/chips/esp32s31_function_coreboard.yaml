@@ -18,7 +18,7 @@ debug:
   addr2line_key: addr2line_zephyr_xtensa
   openocd_key: openocd_esp32
   # 整份 cfg（内部 source board/esp32s31-builtin.cfg），只有 Espressif 那份有该脚本
-  openocd_config: boards/esp32s31_function_coreboard/support/openocd.cfg
+  openocd_config: kharon-boards/boards/espressif/esp32s31_function_coreboard/support/openocd.cfg
   device: esp32s31
 
 flash:

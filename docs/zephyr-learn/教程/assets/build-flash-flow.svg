@@ -47,7 +47,7 @@
 
   <rect x="24" y="240" width="300" height="142" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
   <text x="40" y="264" font-size="11.5" font-weight="600" fill="#0f172a">规则 1：产物跟着工程走</text>
-  <text x="40" y="286" font-size="10" fill="#475569">projects/kharon/f411_breath.yaml 的</text>
+  <text x="40" y="286" font-size="10" fill="#475569">kharon-manifest/products/kharon/f411_breath.yaml 的</text>
   <text x="40" y="304" font-size="10" fill="#475569">root / chip / build 字段决定：</text>
   <text x="40" y="326" font-size="10" fill="#475569">应用从哪读、板子用哪个、产物落哪</text>
   <text x="40" y="352" font-size="9.5" fill="#94a3b8">换工程只改 yaml，不改脚本</text>

@@ -20,7 +20,7 @@ debug:
   # 整份 cfg 通道：Zephyr 的 openocd 配置是 base+interface+target 混写的，
   # 塞不进"interface + target 两段"的既有校验（见方案 §5.4 S3）
   openocd_key: openocd
-  openocd_config: applications/stm32f4/common/dap_link_openocd.cfg
+  openocd_config: kharon-boards/boards/st/blackpill_f411ce/support/openocd.cfg
   device: STM32F411CE
 
 flash:

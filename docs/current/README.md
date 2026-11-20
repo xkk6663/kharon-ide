@@ -3,6 +3,9 @@
 这里是本仓的**现行口径入口**。clone 后只需读本页列出的文档，即可完成
 `host.local.yaml` → `kharon bootstrap` → `doctor` → `build`。
 
+`bootstrap` 默认 `learning`：跟随上游 + 全量 `west update`，对齐 Zephyr 教程；需要
+CI / 回归 / 复现时加 `--pinned`，只拉 manifest 里钉住的 6 个模块。
+
 ## 先读什么
 
 | 顺序 | 文档 | 用途 |

@@ -369,7 +369,7 @@ def boards_by_source(cfg: Config, facts: WorkspaceFacts | None = None,
 
     * ``pack``：芯片包 ``target`` 声明（本仓真正在用的板）；
     * ``west``：``west boards``（工作区内所有，含模块板）；
-    * ``repo``：``zephyr_modules/**/boards`` 直接扫（无工作区时唯一来源）。
+    * ``repo``：``<ZEPHYR_ROOT>/kharon-boards`` 直接扫（无工作区时唯一来源）。
 
     三个列表都**去重**，``all`` 是并集（按 pack → west → repo 顺序，同名只留一条）。
     """
@@ -395,13 +395,15 @@ def boards_by_source(cfg: Config, facts: WorkspaceFacts | None = None,
         if board and board not in packs:
             packs.append(board)
 
-    repo_root = Path(cfg.root) / "zephyr_modules"
+    repo_root = Path(cfg.zephyr_root) / "kharon-boards"
+    if not repo_root.is_dir():
+        # 旧布局兼容：物理拆分前的自研板模块
+        repo_root = Path(cfg.root) / "zephyr_modules" / "elab-boards"
     repo: list[str] = []
     if repo_root.is_dir():
-        for mod in sorted(repo_root.iterdir()):
-            for b in _repo_boards(cfg, str(mod)):
-                if b not in repo:
-                    repo.append(b)
+        for b in _repo_boards(cfg, str(repo_root)):
+            if b not in repo:
+                repo.append(b)
 
     west = list(west_boards or [])
     allb: list[str] = []

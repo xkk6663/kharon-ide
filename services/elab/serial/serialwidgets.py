@@ -38,6 +38,7 @@ from pathlib import Path
 from elab.serial import serialmon as sm
 from elab.serial import serialterm as st
 from elab.core.config import Config, ElabError
+from elab.core import paths as core_paths
 
 WIDGETS_SUFFIX = ".widgets.json"
 #: 单文件上限（64 KiB）与组件数上限。文件是工程配置，不是数据面，必须有界。
@@ -157,7 +158,7 @@ def widgets_path(cfg: Config, project: str) -> Path:
     name = str(project or "").strip()
     if not _PROJECT_RE.fullmatch(name):
         raise ElabError(f"工程名不合法：{project!r}")
-    return Path(cfg.root) / "projects" / f"{name}{WIDGETS_SUFFIX}"
+    return core_paths.runtime_dir(cfg) / f"{name}{WIDGETS_SUFFIX}"
 
 
 def _empty(project: str, path: Path) -> dict:

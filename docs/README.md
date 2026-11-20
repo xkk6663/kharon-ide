@@ -16,6 +16,7 @@
 | [12 Zephyr 工作区三形态](tutorials/12-Zephyr工作区三形态.md) | 仓库应用 / 工作区 / 独立应用三种形态 |
 | [13 Zephyr OTA 局域网升级](tutorials/13-Zephyr_OTA局域网升级.md) | MCUboot + 局域网 OTA |
 | [14 Zephyr 调试区操作](tutorials/14-Zephyr调试区操作.md) | GDB、断点、变量、寄存器、实时内存 |
+| [15 双根与 Board / APP / Product](tutorials/15-Zephyr工作区双根与板级APP产品.md) | IDE/工作区双根、板级真相、APP 契约、产品 targets 与架构页 |
 
 ## current/ —— 现行口径
 
@@ -35,6 +36,8 @@
 | [设计约束](design/设计约束.md) | C1–C36 硬约束 |
 | [仓库结构地图与官方对照](design/仓库结构地图与官方对照_2026-11-18.md) | 目录术语与 Zephyr 官方结构对照 |
 | [架构优化与目录重构方案](design/架构优化与目录重构方案_2026-11-19.md) | 应用公共层、工程登记、bootstrap 收口 |
+| [企业级 Zephyr 工作区边界](design/企业级Zephyr工作区边界.md) | IDE / 板级 / APP 三分边界与 P0–P4 迁移路径 |
+| [应用层多板解耦与企业级改造计划](design/应用层多板解耦与企业级改造计划_2026-11-20.md) | APP 层硬件真相审计、Board/App/Product 契约与 A0–A5 实施路径 |
 | [技术方案_Kharon融合实施与UI改造](design/技术方案_Kharon融合实施与UI改造_2026-11-18.md) | Kharon 模式与驾驶舱改造 |
 | [技术方案_Provider工具链架构](design/技术方案_Provider工具链架构.md) | provider 是数据、执行器只认解析结果 |
 | [ICD_cockpit_events](design/ICD_cockpit_events.md) | 事件契约与 SSE |

@@ -83,6 +83,11 @@ def project_cards(cfg: Config) -> dict:
     _prof = _profile_summary(cfg) or {}
     _only_arch = [str(x) for x in ((_prof.get("projects") or {}).get("archetype") or [])]
     for name, raw in sorted(cfg.projects.items()):
+        # 多 target 产品：驾驶舱默认展示第一个 target，并额外给出 targets 列表；
+        # 后续 UI 选择 target 时用 target id 重新解析（不静默取第一个当真相）。
+        raw_targets = cfg.targets_of(raw)
+        if len(raw_targets) > 1:
+            cfg.select_target(name, str(raw_targets[0]["id"]))
         proj = cfg.resolved_project(name)          # 完成 ${...} 插值
         if _only_arch and str(proj.get("archetype") or "") not in _only_arch:
             continue
@@ -178,6 +183,9 @@ def project_cards(cfg: Config) -> dict:
 
         cards.append({
             "name": name,
+            "target": proj.get("_target_id", ""),
+            "targets": [{"id": str(t.get("id")), "chip": str(t.get("chip"))}
+                        for t in raw_targets],
             "chip": chip_ref,
             # 多板对照分组（唯一的新元数据）：同一组 = 同一次对照。
             # 空 = 不参与矩阵（普通工程）。

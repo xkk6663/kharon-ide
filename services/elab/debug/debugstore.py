@@ -21,6 +21,8 @@ import os
 import threading
 from pathlib import Path
 
+from elab.core import paths as core_paths
+
 _LOCK = threading.RLock()
 
 
@@ -34,7 +36,7 @@ def _err_conflict(cur: int, base: int):
 
 
 def path_for(cfg, project: str) -> Path:
-    return Path(cfg.root) / "projects" / f"{project}.debug.json"
+    return core_paths.runtime_dir(cfg) / f"{project}.debug.json"
 
 
 def empty() -> dict:

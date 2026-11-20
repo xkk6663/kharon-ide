@@ -47,6 +47,8 @@ projects/kharon.local.yaml
 /west/
 # 每机器的依赖：venv / cmake / ninja / ccache（可重建）
 /.deps/
+# bootstrap 通道状态（learning / pinned，本机文件）
+/.kharon/
 # 每机器的 SDK 与工具链路径（bootstrap --write-local 写入）
 /kharon.local.yaml
 # 本机绝对路径覆盖：按 profile 分节，绝不入库（模板见 config/host.local.yaml.example）

@@ -11,12 +11,13 @@ import re
 from pathlib import Path
 
 from elab.core.config import Config, ElabError, Host, to_fwd
+from elab.core import paths as core_paths
 
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 
 def _yaml_path(cfg: Config, name: str) -> Path:
-    return cfg.root / "projects" / f"{name}.yaml"
+    return core_paths.products_dir(cfg) / f"{name}.yaml"
 
 
 def _boot_referrers(cfg: Config, name: str) -> list[str]:

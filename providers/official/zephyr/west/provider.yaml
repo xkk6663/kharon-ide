@@ -69,12 +69,12 @@ defaults:
     CCACHE_DIR: "${host:tools.zephyr.ccache_dir}"
     WEST_PYTHON: "${host:tools.west_python.path}"
     # ★ 自研板 + 应用公共层都作为 **Zephyr module** 接入：
-    #   板子住在 `<repo>/zephyr_modules/elab-boards/`，公共 C 源住在
-    #   `<repo>/zephyr_modules/elab-app-common/`，不再往 `west/zephyr/` 拷副本。
+    #   板子住在 `<ZEPHYR_ROOT>/kharon-boards/`，公共 C 源住在
+    #   `<ZEPHYR_ROOT>/elab-app-common/`，不再往 `zephyr/` 拷副本。
     #   `EXTRA_ZEPHYR_MODULES` 同时被 `west boards` 与 CMake 配置期读取，
     #   两块 module 既不用进 west 清单、也不用新建 git 仓。
     #   ★ 必须是**正斜杠**；多路径用 `;` 分隔（zephyr_module.py 按 `;` split）。
-    EXTRA_ZEPHYR_MODULES: "${elab_root}/zephyr_modules/elab-boards;${elab_root}/zephyr_modules/elab-app-common"
+    EXTRA_ZEPHYR_MODULES: "${zephyr_root}/kharon-boards;${zephyr_root}/elab-app-common"
   env_prepend_path:
     - "${host:tools.zephyr.cmake_bin_dir}"
     - "${host:tools.zephyr.ninja_bin_dir}"

@@ -1,6 +1,0 @@
-board:
-  name: esp32s3_korvo
-  full_name: ESP32-S3 Korvo Custom Board
-  vendor: espressif
-  socs:
-  - name: esp32s3

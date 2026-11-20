@@ -154,7 +154,7 @@ $root = "C:\Users\xiao1\Desktop\ELAB\kharon-ide"
 # 编（产物落 build\stm32f4\f411_breath\default）
 .\kharon.cmd build -p f411_breath
 
-# 编 + 烧（内核按 projects/kharon/f411_breath.yaml 选 DAP-Link + openocd）
+# 编 + 烧（内核按 kharon-manifest/products/kharon/f411_breath.yaml 选 DAP-Link + openocd）
 .\kharon.cmd flash -p f411_breath
 
 # 硬件 PWM 对照工程（TIM4 → PB6/PB7；第一次加 --clean，让新 overlay 生效）

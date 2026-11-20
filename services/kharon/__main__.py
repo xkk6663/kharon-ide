@@ -6,7 +6,7 @@
 归档副本，``kharon deps`` 负责把副本**拷回**树内。代价是"两份存在"，而且
 ``west update`` 一跑就冲掉 —— 别人 clone 之后永远复现不了。
 
-现在反过来：板子住在仓库里的 ``zephyr_modules/elab-boards/``，作为 **Zephyr module**
+现在反过来：板子住在工作区里的 ``kharon-boards/``，作为 **Zephyr module**
 经 ``EXTRA_ZEPHYR_MODULES`` 接入（不需要进 west 清单、不需要新建 git 仓）。
 于是 ``deps`` 的职责只剩**证明它真的接上了**：
 
@@ -28,17 +28,19 @@ import subprocess
 import sys
 from pathlib import Path
 
+from kharon import roots
+
 #: module 根的相对位置（与 provider.yaml 的 EXTRA_ZEPHYR_MODULES 同源）
-MODULE_REL = Path("zephyr_modules") / "elab-boards"
+MODULE_REL = Path("kharon-boards")
 #: module 自报的名字（写错 name 时 cmake 期才报，不如这里先说）
-MODULE_NAME = "elab_boards"
+MODULE_NAME = "kharon_boards"
 #: 应用公共层 module（与 provider 的 EXTRA_ZEPHYR_MODULES 第二项同源）
-APP_MODULE_REL = Path("zephyr_modules") / "elab-app-common"
+APP_MODULE_REL = Path("elab-app-common")
 APP_MODULE_NAME = "elab_app_common"
 
 
 def _root() -> Path:
-    return Path(os.environ.get("ELAB_ROOT") or Path(__file__).resolve().parents[2])
+    return roots.ide_root()
 
 
 def _host_yaml() -> dict:
@@ -61,7 +63,11 @@ def _host_yaml() -> dict:
     #   路径全退化成仓库根 —— 实测踩到）。
     tools = data.get("tools") or {}
     z = tools.get("zephyr") or {}
-    subst = {"ELAB_ROOT": root.as_posix()}
+    subst = {
+        "IDE_ROOT": root.as_posix(),
+        "ELAB_ROOT": root.as_posix(),
+        "ZEPHYR_ROOT": roots.zephyr_root().as_posix(),
+    }
 
     def res(v) -> Path:
         s = str(v or "")
@@ -71,6 +77,8 @@ def _host_yaml() -> dict:
         return p if p.is_absolute() else (root / p)
 
     return {
+        "ide_root": root,
+        "zephyr_root": roots.zephyr_root(),
         "host_file": path,
         "workspace": res(z.get("workspace")),
         "base": res(z.get("base")),
@@ -92,7 +100,17 @@ def _board_vendor(board_dir: Path) -> str:
 
 
 def _module_root() -> Path:
+    target = roots.zephyr_root() / "kharon-boards"
+    if (target / "zephyr" / "module.yml").is_file():
+        return target
     return _root() / MODULE_REL
+
+
+def _app_module_root() -> Path:
+    target = roots.zephyr_root() / "elab-app-common"
+    if (target / "zephyr" / "module.yml").is_file():
+        return target
+    return _root() / APP_MODULE_REL
 
 
 def _west_boards(base: Path) -> list[str]:
@@ -105,7 +123,7 @@ def _west_boards(base: Path) -> list[str]:
     py = str(venv) if venv.is_file() else sys.executable
     env = dict(os.environ)
     env["ZEPHYR_BASE"] = str(base)
-    env["EXTRA_ZEPHYR_MODULES"] = f"{_module_root().as_posix()};{( _root() / APP_MODULE_REL).as_posix()}"
+    env["EXTRA_ZEPHYR_MODULES"] = f"{_module_root().as_posix()};{_app_module_root().as_posix()}"
     try:
         proc = subprocess.run([py, "-m", "west", "boards"], cwd=str(ws), env=env,
                               capture_output=True, text=True, encoding="utf-8",
@@ -157,7 +175,7 @@ def cmd_deps(args) -> int:
             bad += 1
 
     # ①b 应用公共层 module（与板子 module 同属 EXTRA_ZEPHYR_MODULES）
-    app_mod = _root() / APP_MODULE_REL
+    app_mod = _app_module_root()
     app_yml = app_mod / "zephyr" / "module.yml"
     if not app_yml.is_file():
         print(f"[kharon] ✗ 缺少 {app_yml}（应用公共层 module 的入口）")
@@ -217,7 +235,7 @@ def cmd_deps(args) -> int:
 
 def cmd_where(_args) -> int:
     h = _host_yaml()
-    for k in ("host_file", "workspace", "base", "sdk", "boards_local"):
+    for k in ("ide_root", "zephyr_root", "host_file", "workspace", "base", "sdk", "boards_local"):
         print(f"{k:14s} {h[k]}")
     return 0
 
@@ -252,6 +270,8 @@ def cmd_cockpit(args: list[str]) -> int:
         pypath.append(env["PYTHONPATH"])
     env["PYTHONPATH"] = os.pathsep.join(pypath)
     env["ELAB_ROOT"] = str(root)
+    env["IDE_ROOT"] = str(root)
+    env["ZEPHYR_ROOT"] = str(roots.zephyr_root())
     print(f"[kharon] 驾驶舱 → http://127.0.0.1:{port}/  （按 Ctrl+C 结束）")
     return subprocess.call([sys.executable, "-m", "cockpit.server",
                             "--port", str(port), *rest], cwd=str(root), env=env)
@@ -297,7 +317,8 @@ def main(argv=None) -> int:
         return cmd_cockpit(argv[1:])
     if cmd in ("-h", "--help"):
         print(__doc__ or "")
-        print("子命令：deps [--check] [--force] / bootstrap [--check|--offline|--write-local] / "
+        print("子命令：deps [--check] [--force] / bootstrap "
+              "[--check|--offline|--write-local|--learning|--pinned] / "
               "where / env [--out P] / adapt APP [--write] / cockpit [--port N]；其余同 `elab --help`")
         return 0
 

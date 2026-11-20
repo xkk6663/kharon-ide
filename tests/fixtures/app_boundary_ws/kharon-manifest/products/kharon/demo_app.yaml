@@ -1,0 +1,7 @@
+name: demo_app
+chip: demo_chip
+archetype: zephyr
+targets:
+  - id: default
+    chip: demo_chip
+    board: demo_board

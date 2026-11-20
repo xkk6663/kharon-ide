@@ -16,6 +16,10 @@
 - `projects/kharon` 补齐 6 个工程登记，共 15 个；`kharon ws` 可识别仓库应用与 west 树内样例。
 - `kharon bootstrap` 成为正式子命令；`--write-local` 改写入 `host.local.yaml` 的 `kharon:` 分节；
   全新 clone 时自动安装随仓的 `zephyr/framework` 适配包。
+- `kharon bootstrap` 新增双通道：全新 clone 默认 `learning`（跟随上游 + 全量 `west update`，
+  对齐 Zephyr 教程）；`--pinned` 按 manifest 钉 commit、只拉 `zephyr.pinned_modules`
+  的 6 个模块。通道状态写入 `.kharon/bootstrap.json`（gitignored）；`west` 是 junction
+  时拒绝联网更新，避免误改旧仓工作区。
 - `hal_espressif` revision 从 `pull/657/head` 钉到不可变 commit。
 - 教程 00 重写为 Kharon 快速开始；新增迁移说明与文档索引。
 - 删除 `contracts/tools.schema.json` 与生成物里的 `TOOL_NAMES` / `TOOL_ACTIONS`：本仓不再有

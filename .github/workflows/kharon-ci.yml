@@ -23,6 +23,11 @@ jobs:
       - name: Generated contracts guard
         run: node scripts/check-generated-contracts.mjs
 
+      - name: APP boundary guard
+        # 用仓库内最小 workspace 夹具跑真实脚本；完整工作区仍在本地按
+        # `python scripts/app_boundary_check.py --root $env:ZEPHYR_ROOT` 检查。
+        run: python scripts/app_boundary_check.py --root tests/fixtures/app_boundary_ws
+
       - name: Pytest
         shell: pwsh
         env:

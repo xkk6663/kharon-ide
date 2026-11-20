@@ -22,6 +22,7 @@ from pathlib import Path
 from elab.platform._winproc import proc_kwargs
 from elab.core.config import Config, ElabError, Host, to_fwd
 from elab.core import _yaml
+from elab.core import paths as core_paths
 from elab.platform import ota_layout as ota_layout
 from elab.workflow.plan import Plan, plan_for
 
@@ -261,8 +262,8 @@ def check_chip(rep: Report, cfg: Config, host: Host, chip: dict):
                  f"flash.runner={runner} → 烧录交回 west flash，openocd cfg 不适用")
         oc_cfg = dbg.get("openocd_config")
         if oc_cfg:
-            found = (Path(cfg.root) / oc_cfg)
-            if found.is_file():
+            found = [Path(cfg.root) / oc_cfg, Path(cfg.zephyr_root) / oc_cfg]
+            if any(p.is_file() for p in found):
                 rep.ok(f"chip.{cid}.openocd_config", oc_cfg)
             else:
                 rep.warn(f"chip.{cid}.openocd_config", f"整份 cfg 不存在：{oc_cfg}")
@@ -276,8 +277,8 @@ def check_chip(rep: Report, cfg: Config, host: Host, chip: dict):
             # ★ 整份 cfg 通道：interface + target 都写在这份文件里，芯片侧**没有**
             #   `openocd_target` 这个键。若仍按 target 判，会稳定报一句假告警
             #   （f411_breath 实测：明明能烧，doctor 说"flash/debug 不可用"）。
-            found = Path(cfg.root) / oc_cfg
-            if found.is_file():
+            found = [Path(cfg.root) / oc_cfg, Path(cfg.zephyr_root) / oc_cfg]
+            if any(p.is_file() for p in found):
                 rep.ok(f"chip.{cid}.openocd_config", oc_cfg)
             else:
                 rep.warn(f"chip.{cid}.openocd_config", f"整份 cfg 不存在：{oc_cfg}")
@@ -738,7 +739,7 @@ def check_host_refs(cfg: Config, rep: Report, strict: bool = False) -> None:
     """
     from elab.platform import provider as provider_mod
 
-    files: list[Path] = sorted((cfg.root / "projects").glob("*.yaml"))
+    files: list[Path] = sorted(core_paths.products_dir(cfg).glob("*.yaml"))
     for root_dir in provider_mod.provider_roots(cfg):
         if root_dir.is_dir():
             files.extend(sorted(root_dir.rglob("provider.yaml")))
@@ -836,7 +837,9 @@ def workspace_check(cfg: Config, rep: Report, only: str | None = None) -> None:
                          f"需要的模块齐了：{', '.join(info['needed'])}")
 
     # 树内残留板：module 化之后，同名副本会让 `west boards` 直接 RuntimeError
-    module_boards = Path(cfg.root) / "zephyr_modules" / "elab-boards" / "boards"
+    module_boards = Path(cfg.zephyr_root) / "kharon-boards" / "boards"
+    if not module_boards.is_dir():
+        module_boards = Path(cfg.root) / "zephyr_modules" / "elab-boards" / "boards"
     if module_boards.is_dir() and facts.zephyr_base:
         for bm in sorted(module_boards.glob("*/*/board.yml")):
             try:

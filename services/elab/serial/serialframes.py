@@ -19,6 +19,7 @@ from pathlib import Path
 
 from elab.serial import serialcodec as codec
 from elab.core.config import Config
+from elab.core import paths as core_paths
 
 MAX_PROFILES = 32
 MAX_FIELDS = 64
@@ -57,7 +58,7 @@ def frames_path(cfg: Config, project: str) -> Path:
         if not p.is_absolute():
             p = Path(cfg.root) / p
         return p.with_name(p.stem + ".frames.json")
-    return Path(cfg.root) / "projects" / f"{project}.frames.json"
+    return core_paths.runtime_dir(cfg) / f"{project}.frames.json"
 
 
 def _empty() -> dict:

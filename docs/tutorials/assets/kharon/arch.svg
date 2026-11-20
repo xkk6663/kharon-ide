@@ -57,7 +57,7 @@
   <text x="648" y="96" font-size="11" fill="#64748b">装配数据（唯一允许分叉的地方）</text>
 
   <rect x="648" y="108" width="140" height="50" rx="7" fill="#ffffff" stroke="#cbd5e1"/>
-  <text x="718" y="129" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">projects/kharon</text>
+  <text x="718" y="129" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">kharon-manifest</text>
   <text x="718" y="147" font-size="9.5" fill="#94a3b8" text-anchor="middle">app · board · 产物 · 判据</text>
 
   <rect x="800" y="108" width="140" height="50" rx="7" fill="#ffffff" stroke="#cbd5e1"/>
@@ -83,11 +83,11 @@
   <text x="138" y="396" font-size="10" fill="#3b82f6" text-anchor="middle">freestanding app（独立可编译）</text>
 
   <rect x="252" y="356" width="196" height="58" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
-  <text x="350" y="377" font-size="11.5" font-weight="600" fill="#1e40af" text-anchor="middle">zephyr_modules/</text>
+  <text x="350" y="377" font-size="11.5" font-weight="600" fill="#1e40af" text-anchor="middle">kharon-boards/</text>
   <text x="350" y="396" font-size="10" fill="#3b82f6" text-anchor="middle">elab-boards · elab-app-common</text>
 
   <rect x="40" y="428" width="196" height="58" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
-  <text x="138" y="449" font-size="11.5" font-weight="600" fill="#1e40af" text-anchor="middle">west/</text>
+  <text x="138" y="449" font-size="11.5" font-weight="600" fill="#1e40af" text-anchor="middle">zephyr-workspace/</text>
   <text x="138" y="468" font-size="10" fill="#3b82f6" text-anchor="middle">Zephyr 4.5.99 + HAL + 板级 dts</text>
 
   <rect x="252" y="428" width="196" height="58" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>

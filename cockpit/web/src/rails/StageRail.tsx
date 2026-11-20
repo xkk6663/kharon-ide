@@ -48,6 +48,8 @@ export function fullLoopSteps(
 
 export interface StageRailProps {
   card: ProjectCard | null;
+  /** 当前产品 target（多 target 产品；空 = 旧单 chip） */
+  target?: string;
   run: RunSnapshot;
   caps: Capabilities | null;
   /** 已发出 POST /api/run，等待 run 启动 */
@@ -91,6 +93,7 @@ function fmtDur(sec: number): string {
  */
 export function StageRail({
   card,
+  target,
   run,
   caps,
   busy,
@@ -118,7 +121,7 @@ export function StageRail({
     setPvBusy(true);
     setPvErr(null);
     try {
-      setPv(await api.plan({ project: name, steps, clean, jobs: jobs ?? undefined }));
+      setPv(await api.plan({ project: name, target: target || undefined, steps, clean, jobs: jobs ?? undefined }));
     } catch (e) {
       setPvErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -130,7 +133,7 @@ export function StageRail({
   useEffect(() => {
     setPv(null);
     setPvErr(null);
-  }, [card?.name, clean, jobs]);
+  }, [card?.name, target, clean, jobs]);
 
   if (!card) {
     return (

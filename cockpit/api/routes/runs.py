@@ -136,6 +136,17 @@ def handle_post(h, u, qs):
         project = body.get("project") or ""
         if not project:
             return h._err(400, "缺少 project")
+        target = str(body.get("target") or "").strip() or None
+        if target:
+            h.cfg.select_target(project, target)
+        else:
+            # 过渡期：面板尚未提供 target 切换时，按卡片展示的第一个 target 起跑；
+            # CLI 仍然要求显式 --target，只有驾驶舱沿用自己展示的默认。
+            raw = h.cfg.projects.get(project) or {}
+            raw_targets = h.cfg.targets_of(raw)
+            if len(raw_targets) > 1:
+                target = str(raw_targets[0]["id"])
+                h.cfg.select_target(project, target)
         # ★ 安装/卸载适配包期间**冻结闭环**：包操作会改芯片数据与启用状态，
         #   此刻起 run 会读到半成品配置。与包操作里的反向守卫成对出现。
         busy_job = h.pkg_jobs.current()
@@ -163,6 +174,7 @@ def handle_post(h, u, qs):
                 clean=bool(body.get("clean")),
                 jobs=body.get("jobs"),
                 verbose=bool(body.get("verbose")),
+                target=target,
                 actor=body.get("actor") or "human",
                 on_finish=((lambda ar, rc: _serial_yield_end(h.cfg))
                            if yielded else None),

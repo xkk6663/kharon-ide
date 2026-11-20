@@ -250,6 +250,8 @@ def _tool_subs(cfg: Config, project: str, proj: dict, strings) -> dict:
     # EXTRA_ZEPHYR_MODULES 指 zephyr_modules/elab-boards）。大写 `${ELAB_ROOT}`
     # 由 cfg.resolve 处理（只对 yaml 值生效），provider 模板解析器不认识它。
     subs["elab_root"] = to_fwd(cfg.root)
+    subs["ide_root"] = to_fwd(cfg.ide_root)
+    subs["zephyr_root"] = to_fwd(cfg.zephyr_root)
     # ★ 工作区事实（三形态 + 双拓扑，2026-11-18）：provider 只写 `${ws:app_arg}`，
     #   不写"三种命令模板"。**缺项时不进 subs** —— 于是 `${ws:topdir}` 之类的
     #   引用会被 _sub_text 的 fail-fast 抓住（"用了就说明它要求工作区"）。
@@ -841,7 +843,7 @@ def _execute(cfg: Config, step: str, project: str, *, clean: bool, jobs: int | N
 
 # ── 只读预演（M2：「先看命令再执行」）────────────────────────────
 def preview(cfg: Config, project: str, *, steps=None, clean: bool = False,
-            jobs: int | None = None) -> dict:
+            jobs: int | None = None, target: str | None = None) -> dict:
     """把每个步骤**将要执行**的东西算出来，**什么都不做**。
 
     为什么值得单独做（R8「可手动干预」的前置）：
@@ -861,6 +863,8 @@ def preview(cfg: Config, project: str, *, steps=None, clean: bool = False,
     steps = parse_steps(",".join(steps) if isinstance(steps, (list, tuple)) else steps)
     plan: list[dict] = []
     warnings: list[str] = []
+    if target:
+        cfg.select_target(project, target)
     validate_delegation(cfg, project, steps)
     from elab.platform import provider as provider_mod
     tc = provider_mod.resolve(cfg, project)

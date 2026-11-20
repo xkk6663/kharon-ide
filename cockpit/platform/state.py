@@ -197,7 +197,13 @@ def _plan_preview(cfg: Config, qs: dict) -> dict:
     clean = (qs.get("clean") or ["0"])[0].lower() in ("1", "true", "yes", "on")
     jobs_raw = (qs.get("jobs") or [""])[0]
     jobs = int(jobs_raw) if jobs_raw.strip().isdigit() else None
-    return run_mod.preview(cfg, project, steps=steps, clean=clean, jobs=jobs)
+    target = (qs.get("target") or [""])[0].strip() or None
+    if target is None:
+        raw_targets = cfg.targets_of(cfg.projects.get(project) or {})
+        if len(raw_targets) > 1:
+            target = str(raw_targets[0]["id"])
+    return run_mod.preview(cfg, project, steps=steps, clean=clean, jobs=jobs,
+                           target=target)
 
 
 #: 会占用串口 / SWD 的步骤 —— 它们运行期间，手写通道必须让路。

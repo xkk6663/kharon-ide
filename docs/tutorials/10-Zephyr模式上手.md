@@ -11,6 +11,11 @@
 > 本机路径/探针差异写 `host.local.yaml`；`ELAB_HOST=kharon` 等价选 profile。
 > 本文所有数字都是**这一轮实机跑出来**的，不是估算；截图都是真机 + 真内核 + 真面板
 > 工作区布局进阶（三形态 / 双拓扑 / 无工作区降级 / 板子来源）→ [12 · 三种 Zephyr 应用形态怎么接](./12-Zephyr工作区三形态.md)
+> 双根拆分与 Board / APP / Product 分层 → [15 · 双根与板级 APP 产品](./15-Zephyr工作区双根与板级APP产品.md)
+>
+> **安装通道**：`kharon bootstrap` 全新 clone 默认 `learning`（跟随上游 + 全量），对齐
+> Zephyr 官方教程；本文所有数字来自 `pinned` 通道（manifest 钉 commit + 6 模块闭包），
+> 需要复现时加 `--pinned`。
 
 ---
 
@@ -38,11 +43,12 @@ Zephyr 把「构建怎么跑」这件事写进了产物：板级 dts、Kconfig�
 - **入口**只有 `.\kharon.cmd`；CLI 与 standalone cockpit 共用同一套内核状态与 HTTP ICD。
 - **内核**是 `services/elab/**`，`plan / run / build / flash / serial / debug / provider / workspace`
   都在这里；`cockpit/server.py` 只是它的 HTTP 面。
-- **装配数据**四份：`projects/kharon/*.yaml`（工程是什么）、`config/host.kharon.profile.yaml` +
-  `host.local.yaml`（工具在哪）、`providers/official/zephyr/**`（命令怎么拼）、
-  `packs/official/zephyr/**`（板子叫什么）。
-- **应用与工作区**：`applications/<family>/<app>/**` 是可独立编译的 freestanding app，
-  `zephyr_modules/**` 提供板级与应用公共层，`west/**` 是 Zephyr 工作区。
+- **装配数据**四份：`zephyr-workspace/kharon-manifest/products/kharon/*.yaml`（产品是什么）、
+  `config/host.kharon.profile.yaml` + `host.local.yaml`（工具在哪）、
+  `providers/official/zephyr/**`（命令怎么拼）、`packs/official/zephyr/**`（芯片是什么）。
+- **应用与工作区**：`zephyr-workspace/applications/<family>/<app>/**` 是可独立编译的
+  workspace app；板级真相在 `zephyr-workspace/kharon-boards/`，公共层在
+  `zephyr-workspace/elab-app-common/`，`zephyr-workspace/` 是 west topdir。
 
 本仓没有第二个产品入口，也没有 classic / DSH 分支；旧仓 `dsh-elab-flow` 的
 `elab.cmd`、`cockpit.cmd`、双模式切换只作为历史对照，不是这里的操作步骤。
@@ -50,9 +56,9 @@ Zephyr 把「构建怎么跑」这件事写进了产物：板级 dts、Kconfig�
 ### 1.1 你只需要写三份 YAML
 
 ```text
-projects/kharon/f411_breath.yaml          # 这个工程是什么（app 在哪、用哪颗板、串口参数）
+zephyr-workspace/kharon-manifest/products/kharon/f411_breath.yaml  # 这个产品是什么（app 在哪、用哪颗芯片、串口参数）
 config/host.kharon.profile.yaml + host.local.yaml   # 工具在哪（profile 默认 + 本机路径覆盖：gdb / openocd / ninja / python / 探针）
-packs/official/zephyr/framework/chips/blackpill_f411ce.yaml   # 这颗板叫什么（west -b 的值）
+packs/official/zephyr/framework/chips/blackpill_f411ce.yaml   # 这颗芯片叫什么（west -b 的值）
 ```
 
 第三份一般不用你写——内置包里已经有 4 颗板。**不再需要** `launch.json`、不再需要 build 脚本、
@@ -108,8 +114,8 @@ host 只管路径，芯片包只管名字映射，`runners.yaml` 是构建产物
 | 工程卡 | 工程名 + 芯片 id + `zephyr 类` | 选中即切换工作区上下文 |
 | 底部芯片卡 | 内核 / 型号 / 主频 / 存储 / 探针 / 串口 / 闭环判据 | **这块板现在能不能烧、能不能看串口**，一眼确认 |
 
-> `projects/kharon` 现登记 15 个工程（F1 / F4 / ESP32-S3 / ESP32-S31 四组）。截图是补登记
-> 之前的 8 个，布局与交互不变。
+> `kharon-manifest/products/kharon` 现登记 13 个产品（F1 / F4 / ESP32-S3 / ESP32-S31 四组）。
+> 截图是补登记之前的 8 个，布局与交互不变。
 
 底部那张卡值得单独说：`探针 dap（已配置）`、`串口 auto 115200（就绪）`、`闭环判据 close_on ×1`、
 `flash_on ×1`。这三行就是「声明与执行同源」——面板能点「烧录」的前提，是 host 里真有这个探针，

@@ -37,6 +37,7 @@ from cockpit.platform.state import *  # noqa: F401,F403
 from cockpit.platform.jobs import *  # noqa: F401,F403
 from cockpit.debug.helpers import *  # noqa: F401,F403
 from cockpit.debug.manager import *  # noqa: F401,F403
+from elab.topology import topology  # noqa: F401
 
 
 def handle_get(h, path, qs):
@@ -44,6 +45,8 @@ def handle_get(h, path, qs):
         return h._json(capabilities(h.cfg, h.mgr))
     if path == "/api/projects":
         return h._json(project_cards(h.cfg))
+    if path == "/api/architecture":
+        return h._json(topology(h.cfg))
     if path == "/api/matrix":
         # 多板对照：按 projects yaml 的 `matrix:` 分组聚合（只读 run 留档 + 构建产物）
         return h._json(matrix_view(

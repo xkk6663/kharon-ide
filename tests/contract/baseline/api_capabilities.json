@@ -104,21 +104,6 @@
         "host": "<str>",
         "id": "<str>",
         "label": "<str>",
-        "modes": [
-          {
-            "active": "<bool>",
-            "archetype": [],
-            "desc": "<str>",
-            "host": "<str>",
-            "host_exists": "<bool>",
-            "id": "<str>",
-            "label": "<str>",
-            "order": "<num>",
-            "workspaces": [
-              "<str>"
-            ]
-          }
-        ],
         "name": "<str>",
         "path": "<str>",
         "projects": {

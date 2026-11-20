@@ -4,14 +4,18 @@
 > 文中保留当时的实测数字与踩坑过程作为证据；**当前仓库的主线已经切到 Kharon
 > （Zephyr 单链 + STM32F411/F103）**，操作教程以 [`docs/tutorials/10–14`](../tutorials/10-Zephyr模式上手.md) 为准。
 >
-> **路径已校准**：源码在 `applications/<family>/<app>/`，west 工作区在仓库根 `west/`，
-> `ZEPHYR_BASE=west/zephyr`；旧文中的 `apps/`、`zephyr_k` 是历史叫法，
-> 只在 `变更记录/` 里按原文保留。
+> **路径已校准（2026-11-20）**：源码在 `zephyr-workspace/applications/<family>/<app>/`，
+> west 工作区根是 `zephyr-workspace/`（`ZEPHYR_BASE=zephyr-workspace/zephyr`）；
+> 自研板在 `zephyr-workspace/kharon-boards/`，产品在
+> `zephyr-workspace/kharon-manifest/products/kharon/`。旧文中的 `apps/`、`zephyr_k`、
+> `west/`、`applications/common` 是历史叫法，只在 `变更记录/` 里按原文保留。
 >
-> **旧布局 → 现布局**：`apps/` → `applications/`；`env.ps1` → `kharon env --out scripts\kharon-env.ps1`；
-> `boards/riscv/korvo1/` → `zephyr_modules/elab-boards/boards/espressif/`；
-> `tools/read_serial.py` 不再随仓分发，串口证据统一走 `kharon monitor`。
+> **旧布局 → 现布局**：`west/` → `zephyr-workspace/`；`zephyr_modules/elab-boards` →
+> `kharon-boards/`；`applications/common` → `elab-app-common/`；
+> `projects/kharon/*.yaml` → `kharon-manifest/products/kharon/*.yaml`；
+> `CMakePresets.json` 已删除，构建参数统一由 `kharon run --dry-run` 解析。
 > 早期章节若仍出现这些旧路径，按本表替换即可；命令根目录统一为 `kharon-ide`。
+> 双根与 Board/APP/Product 的完整口径见 [`tutorials/15`](../tutorials/15-Zephyr工作区双根与板级APP产品.md)。
 >
 > **配图口径**：概念/结构图统一手绘 SVG（980 宽、`#fbfcfe` 底、蓝/绿框）；
 > 面板与实机操作图用 CDP 抓真实浏览器，不用渲染图；历史实拍只在原章节保留。
@@ -56,14 +60,18 @@
 
 ## 当前版本与环境（2026-11-19 实测）
 
+> 下表是 **pinned 通道**（`kharon bootstrap --pinned`，manifest 钉 commit + 6 模块闭包）的实测值。
+> 全新 clone 默认走 `learning` 通道：跟随上游 + 全量 `west update`，版本以本次
+> `kharon bootstrap` 解析到的 `west/zephyr` HEAD 和 `.kharon/bootstrap.json` 为准。
+
 | 项 | 当前值 | 怎么看 |
 |---|---|---|
-| Zephyr | `4.5.99`（`west/zephyr/VERSION`） | `Get-Content west\zephyr\VERSION` |
-| commit | `34e025569cbb27660b71db809627c3a7402e2111` | `git -C west\zephyr log -1 --oneline` |
+| Zephyr | `4.5.99`（`zephyr-workspace/zephyr/VERSION`） | `Get-Content ..\zephyr-workspace\zephyr\VERSION` |
+| commit | `34e025569cbb27660b71db809627c3a7402e2111` | `git -C ..\zephyr-workspace\zephyr log -1 --oneline` |
 | west | `v1.5.0`（`.deps/venv`） | `python -m west --version` |
 | SDK | `C:\Users\xiao1\zephyr-sdk-1.0.1` | `kharon env` 生成的脚本里有 `ZEPHYR_SDK_INSTALL_DIR` |
-| 工作区 | `west/`（仓库根） | `kharon where` |
-| `ZEPHYR_BASE` | `west/zephyr` | `kharon where` / `kharon env` |
+| 工作区 | `zephyr-workspace/` | `kharon where` |
+| `ZEPHYR_BASE` | `zephyr-workspace/zephyr` | `kharon where` / `kharon env` |
 | 环境脚本 | `scripts/kharon-env.ps1`（按需生成） | `kharon env --out scripts\kharon-env.ps1` |
 
 > 旧笔记里的 `zephyr_k` 工作区、`riscv32-esp-elf` cross-compile 和 `env.ps1`

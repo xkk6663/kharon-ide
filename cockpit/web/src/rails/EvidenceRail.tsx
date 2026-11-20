@@ -10,8 +10,8 @@ import { SerialWorkspace } from "../serial/SerialWorkspace";
 import { DebugWorkspace } from "../debug/DebugWorkspace";
 import { ModbusWorkspace } from "../modbus/ModbusWorkspace";
 import { MatrixWorkspace } from "../matrix/MatrixWorkspace";
-import { WestWorkspace } from "../west/WestWorkspace";
 import { ZephyrDashboard } from "../zephyr/ZephyrDashboard";
+import { ArchitectureWorkspace } from "../architecture/ArchitectureWorkspace";
 import { Button } from "../primitives/Button";
 import { Input } from "../primitives/Input";
 import { SegmentedTabs, type SegTab } from "../primitives/SegmentedTabs";
@@ -31,6 +31,10 @@ export interface EvidenceRailProps {
   onRunSteps: ((steps: string[]) => void) | null;
   /** 当前选中的工程名 —— 打开监视/手写要以它解析端口/波特率 */
   serialProject: string;
+  /** 当前 product target（多 target 产品；空 = 旧单 chip） */
+  target: string;
+  /** 架构视图里选 target → 回到阶段轨/工程选择 */
+  onPickTarget: (project: string, target: string) => void;
   serialPort: string;
   /** 当前工作区（一级导航选中项，持久化在 layoutStore） */
   ws: WorkspaceId;
@@ -165,6 +169,8 @@ export function EvidenceRail({
   running,
   onRunSteps,
   serialProject,
+  target,
+  onPickTarget,
   serialPort: serialPortBase,
   ws,
   onWs,
@@ -775,6 +781,13 @@ export function EvidenceRail({
           project={serialProject}
           running={running}
         />
+      ) : active.id === "arch" ? (
+        <ArchitectureWorkspace
+          selectedProduct={serialProject}
+          selectedTarget={target}
+          running={running}
+          onPick={onPickTarget}
+        />
       ) : active.id === "debug" ? (
         <DebugWorkspace
           caps={caps}
@@ -790,8 +803,6 @@ export function EvidenceRail({
         />
       ) : active.id === "matrix" ? (
         <MatrixWorkspace running={running} />
-      ) : active.id === "west" ? (
-        <WestWorkspace />
       ) : active.id === "dash" ? (
         <ZephyrDashboard project={serialProject} />
       ) : (

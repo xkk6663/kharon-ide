@@ -33,6 +33,7 @@ from pathlib import Path
 
 from elab.serial import modbus as mb
 from elab.core.config import Config
+from elab.core import paths as core_paths
 
 MAX_TXNS = 200                 # 事务环容量（面板只看最近这些）
 MAX_PENDING = 32               # 手动队列上限（写优先，但不许堆爆）
@@ -65,7 +66,7 @@ def map_path(cfg: Config, project: str) -> Path:
         if not p.is_absolute():
             p = Path(cfg.root) / p
         return p.with_name(p.stem + ".modbus.json")
-    return Path(cfg.root) / "projects" / f"{project}.modbus.json"
+    return core_paths.products_dir(cfg) / f"{project}.modbus.json"
 
 
 def empty_map() -> dict:

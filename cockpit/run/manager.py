@@ -189,7 +189,7 @@ class RunManager:
     # ── spawn ───────────────────────────────────────────────────
     def spawn(self, *, project: str, steps: list[str] | None = None,
               clean: bool = False, jobs: int | None = None, verbose: bool = False,
-              actor: str = "human", on_finish=None) -> dict:
+              target: str | None = None, actor: str = "human", on_finish=None) -> dict:
         """起一个 ``elab run --emit-events`` 子进程，并立刻开始跟读。
 
         ★ run id **由父进程分配**并显式传给子进程（``--run-id``）：
@@ -213,6 +213,8 @@ class RunManager:
                 "--emit-events", "--run-id", run_id,
                 "--events-dir", to_fwd(self.runs_dir),
                 "--actor", actor, "-q"]
+        if target:
+            argv += ["--target", target]
         if clean:
             argv.append("--clean")
         if jobs:

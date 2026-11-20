@@ -1,0 +1,26 @@
+# packs/official/zephyr/framework/chips/korvo1.yaml
+#
+# Korvo-1 = ESP32-S31 高性能核 + 自研 PCB；板级真相在
+# zephyr-workspace/kharon-boards/boards/espressif/korvo1。
+# 这里只保留 IDE 需要的适配事实（target / 调试 / 烧录）。
+
+id: korvo1
+vendor: zephyr
+platform: framework
+part: ESP32-S31
+target: korvo1/esp32s31/hpcore
+core_name: Xtensa LX7
+
+serial:
+  baud: 115200
+
+debug:
+  gdb_key: gdb_zephyr_xtensa
+  addr2line_key: addr2line_zephyr_xtensa
+  openocd_key: openocd_esp32
+  openocd_config: kharon-boards/boards/espressif/korvo1/support/openocd.cfg
+  device: esp32s31
+
+flash:
+  runner: esp32
+  extra_args: ["--esp-device", "${serial_port}"]

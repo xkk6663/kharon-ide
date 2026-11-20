@@ -18,7 +18,7 @@
 1. **该拆，但只拆"文件+target"，不引入 Kconfig、不改 `prj.conf`。** 目标是把 1 个 4378 行的编译单元拆成 **4 个 target / 15 个 .c**，依赖方向变成单向三层。
 2. **Zephyr 的三件工具里，本工程只用得上两件：`zephyr_library()`、iterable section。** `SYS_INIT` 在本工程**刻意不用**——`main()` 里存在硬件就绪顺序依赖（`k_msleep(2000)` 等 Wi-Fi 驱动、HTTP 起来后才自检），把 `start_dns_hijack()` 之类搬到 `SYS_INIT(APPLICATION)` 会在 AP 未启动时 `bind(udp/53)`，是把能跑的代码改坏。理由见 §3.2。
 3. **真正的收益不是"文件变小"，而是三处状态所有权变清楚**：`g_creds` 现在被 4 个层直接改（凭据内部 46 处、HTTP 9 处、串口 10 处、main 3 处），`g_state` 在 6 个层被读写（30 处），`ap_iface/sta_iface` 被 6 个层用（26 处）。改造后三者都只留一个写入口。
-4. **不涉及"跨项目组件"。** 这套分层是这个 app 自己的骨架，不进 `applications/common`（理由见 §9）。
+4. **不涉及"跨项目组件"。** 这套分层是这个 app 自己的骨架，不进 `elab-app-common`（理由见 §9）。
 
 ---
 
@@ -479,7 +479,7 @@ boot 自动重连 → rssi 采样起排
 
 ## 9. 明确不做的事
 
-1. **不把这套骨架放 `applications/common`**。`applications/common` 的准入是"不绑 SoC、≥2 消费者、不含策略"；`wifi_link` 绑 ESP32 的 APSTA 与信道行为，只有一个消费者，全是这个产品的策略 → 留在 app 内。
+1. **不把这套骨架放 `elab-app-common`**。`elab-app-common` 的准入是"不绑 SoC、≥2 消费者、不含策略"；`wifi_link` 绑 ESP32 的 APSTA 与信道行为，只有一个消费者，全是这个产品的策略 → 留在 app 内。
 2. **不升级成 Zephyr module**。没有第二个仓库/第二个人要用，也没有 Kconfig 需求；现在做 module 只会把"改一行 CMake"变成"维护版本与 west.yml"。
 3. **不引入 Kconfig 开关**（会让"改 prj.conf = 全量"变成常态）。
 4. **不改 `prj.conf` / `overlay` / `sections-rom.ld` / `tools/gen_pages.py`**。
@@ -502,7 +502,7 @@ boot 自动重连 → rssi 采样起排
 **本次改造的交付边界**
 
 - **交付**：4 个 target / 15 个 `.c` / `main.c` ≈430 行 / 单向三层依赖 / §8 验收清单全绿
-- **不交付**：目录分层（S12 另轮）、Kconfig 开关、`applications/common` 沉淀、Zephyr module 化
+- **不交付**：目录分层（S12 另轮）、Kconfig 开关、`elab-app-common` 沉淀、Zephyr module 化
 - **不做**：任何 git 提交
 
 ---

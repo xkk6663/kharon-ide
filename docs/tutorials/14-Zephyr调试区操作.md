@@ -5,6 +5,9 @@
 > 入口：`kharon`（Zephyr 模式）→ 右栏 **调试** 工作区
 > 文中所有截图都是本机 **CDP 抓的真实浏览器**；数字来自这一轮实机（run `r-8ef2f363`，2m23s）
 > 前置：先按 [10 · Zephyr 模式上手](./10-Zephyr模式上手.md) 把六步闭环跑绿；工作区形态见 [12](./12-Zephyr工作区三形态.md)，OTA 见 [13](./13-Zephyr_OTA局域网升级.md)
+> **现状校准（2026-11-20）**：源码在 `zephyr-workspace/applications/...`，板级在
+> `zephyr-workspace/kharon-boards`；文中调用栈的 `applications/...` 均相对 `ZEPHYR_ROOT`。
+> 双根与 Board/APP/Product 分层见 [15](./15-Zephyr工作区双根与板级APP产品.md)。
 
 ---
 

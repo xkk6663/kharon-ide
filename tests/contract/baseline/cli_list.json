@@ -31,7 +31,8 @@
         "archetype": "<str>",
         "chip": "<str>",
         "name": "<str>",
-        "root": "<str>"
+        "root": "<str>",
+        "targets": []
       }
     ],
     "toolchains": []

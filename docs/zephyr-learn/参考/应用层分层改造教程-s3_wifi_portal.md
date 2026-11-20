@@ -471,7 +471,7 @@ scan_unlock();
 | `enable_softap()` | L2 | 用 `net_mgmt`（跨平台），不绑 SoC → L2；但 **AP 的 SSID/信道策略**留在 `portal_cfg.h` |
 | `main()` 的时间线 | L3 | 是产品行为，只有一份 |
 | `ota.c` 的 flash 写入 / `boot_request_upgrade` | L0 + 平台 | 认识 `flash_img` / mcuboot → 问 2 命中，且**换芯片必须重写** |
-| `ota_engine.c`（头解析 / 分段算术） | **applications/common** | 不认识 http/flash、不绑 SoC、有 2 个消费者（升级入口 + 串口校验）→ 全命中 |
+| `ota_engine.c`（头解析 / 分段算术） | **elab-app-common** | 不认识 http/flash、不绑 SoC、有 2 个消费者（升级入口 + 串口校验）→ 全命中 |
 
 最后一行是这次新增的 OTA 抽象，下一节单独讲。
 
@@ -488,7 +488,7 @@ scan_unlock();
 
 抽之前先把 `ota_do_upgrade()` 的 381 行按"换芯片要不要重写"分堆：
 
-| 只有协议说了算（→ `applications/common`） | 只有本平台说了算（→ 留在 `ota.c`） |
+| 只有协议说了算（→ `elab-app-common`） | 只有本平台说了算（→ 留在 `ota.c`） |
 |---|---|
 | 头怎么解析、缺哪个头算非法 | 写到哪个分区、用哪个 flash API |
 | 收到的字节和 `Content-Length` 还差多少 | `flash_img_buffered_write` 的缓冲语义 |
@@ -500,7 +500,7 @@ scan_unlock();
 左边这一列**一行 Zephyr 代码都没有**，右边这一列**每一行都在碰 Zephyr**。
 分界线不需要争论，看 include 就知道。
 
-### 6.2 组件里现在有什么（`applications/common/include/ota_engine.h`）
+### 6.2 组件里现在有什么（`elab-app-common/include/ota_engine.h`）
 
 三块，彼此独立：
 
@@ -610,7 +610,7 @@ struct ota_backend {
 设备连不上 WiFi，所以这一轮用的是两道**不需要板子**的关卡：
 
 1. **编译 + 链接**：`ninja` exit 0；`zephyr.bin = 868916 B`。
-2. **主机回归**：`applications/common/test/test_ota_engine.c` + MinGW gcc，把引擎当普通 C 库编，
+2. **主机回归**：`elab-app-common/test/test_ota_engine.c` + MinGW gcc，把引擎当普通 C 库编，
    用一个"假 flash + 假 socket"跑 **45 条断言**：
 
 ```
@@ -628,8 +628,8 @@ RESULT: PASS（0 条失败）
 命令（仓库根）：
 
 ```powershell
-gcc -std=gnu11 -Wall -Wextra -I applications\common\include `
-    applications\common\test\test_ota_engine.c applications\common\src\ota_engine.c -o t_engine.exe
+gcc -std=gnu11 -Wall -Wextra -I elab-app-common\include `
+    elab-app-common\test\test_ota_engine.c elab-app-common\src\ota_engine.c -o t_engine.exe
 .\t_engine.exe
 ```
 
@@ -1052,7 +1052,7 @@ src/l1/page.c        pages.h         三张页面 + captive
 src/l1/shell_cmds.c  （无独立头）    串口命令
 ```
 
-**新增到 `applications/common`（跨工程复用）**
+**新增到 `elab-app-common`（跨工程复用）**
 
 ```
 include/ota_engine.h   OTA 协议层接口：协议原语 + 门禁 + struct ota_backend + 会话

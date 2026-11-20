@@ -851,7 +851,7 @@ PY
 | `services/elab/modbusmaster.py` | 事务引擎、轮询、合并、统计 | 中：节流与单飞约束是总线活命的保证 |
 | `cockpit/web/src/modbus/*.tsx` | standalone 驾驶舱面板 | 低 |
 | `packages/cockpit-ui-core/src/**` | 驾驶舱共用组件（本仓无 DSH 适配层） | 低 |
-| `projects/kharon/*.modbus.json` | 点表（按工程登记） | 低：改完面板立刻生效 |
+| `kharon-manifest/products/kharon/*.modbus.json` | 点表（按工程登记） | 低：改完面板立刻生效 |
 
 ---
 

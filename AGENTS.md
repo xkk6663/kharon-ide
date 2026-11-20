@@ -16,6 +16,9 @@
    的 `name:` 保持一致。新增应用必须同时登记工程（`kharon adapt --write` 或手写 YAML）。
 8. **本机路径只进 `host.local.yaml`**（gitignored）；profile 只写仓库相对路径 `${ELAB_ROOT}/...`。
 9. **没有明确命令不 git commit**；改动留在工作区。
+10. **bootstrap 双通道**：全新 clone 默认 `learning`（跟随上游 + 全量），`--pinned` 才用
+    manifest 钉 commit + 6 模块闭包；CI / 回归必须显式 `--pinned`，不要依赖本机推断。
+    `west` 是 junction 时不得跑联网更新（会改到目标仓）。
 
 ## 验证
 

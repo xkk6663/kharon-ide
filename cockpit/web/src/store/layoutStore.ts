@@ -23,8 +23,8 @@ export type RailId = "projects" | "evidence";
  *    看起来像"这页记不住"，实则是持久化白名单把值吃掉了。
  *    真正"当前工程没有这一页"的兜底在 App 的越界 effect 里（按 profile +
  *    archetype 算），不在这一层做工程相关的判断。 */
-const WS_IDS = new Set(["build", "flash", "serial", "tools", "debug",
-                        "dash", "matrix", "west", "modbus"]);
+const WS_IDS = new Set(["build", "arch", "flash", "serial", "tools", "debug",
+                        "dash", "matrix", "modbus"]);
 
 function isWs(v: unknown): boolean {
   return typeof v === "string" && WS_IDS.has(v);

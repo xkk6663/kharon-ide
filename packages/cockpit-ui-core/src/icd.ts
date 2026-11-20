@@ -185,6 +185,10 @@ export interface ChipInfo {
 
 export interface ProjectCard {
   name: string;
+  /** 当前展示/运行的 target id；旧单 chip 产品为空串 */
+  target?: string;
+  /** 多 target 产品的可选 target（驾驶舱 Product→Target 切换的依据） */
+  targets?: Array<{ id: string; chip: string }>;
   chip: string;
   /** 多板对照分组名（projects yaml 的 `matrix:`）；空 = 不参与矩阵 */
   matrix?: string;
@@ -233,6 +237,68 @@ export interface ProjectCard {
 export interface ProjectsResponse {
   projects: ProjectCard[];
   steps: { all: StepId[]; default: StepId[]; onhw: StepId[] };
+}
+
+// ── /api/architecture ─────────────────────────────────────────────
+export interface ArchitectureBoard {
+  id: string;
+  name: string;
+  full_name: string;
+  vendor: string;
+  socs: string[];
+  /** kharon = 自研板级真相；zephyr = 内核仓上游板 */
+  source: "kharon" | "zephyr";
+  root: string;
+  board_yml: string;
+  files: string[];
+  dts: {
+    console: string;
+    shell_uart: string;
+    aliases: string[];
+    user_props: string[];
+  };
+  apps: Array<{ name: string; root: string }>;
+  products: Array<{ product: string; target: string }>;
+}
+
+export interface ArchitectureApp {
+  name: string;
+  root: string;
+  /** app.yaml 的 kind；无 app.yaml 的产品 APP 为 product */
+  kind: string;
+  board_scope: string;
+  declared_board: string;
+  requires: string[];
+  optional: string[];
+  overlays: string[];
+  products: Array<{ product: string; target: string }>;
+}
+
+export interface ArchitectureTarget {
+  product: string;
+  target: string;
+  chip: string;
+  board: string;
+  board_target: string;
+  app: string;
+  app_root: string;
+  root: string;
+  work_dir: string;
+}
+
+export interface ArchitectureProduct {
+  name: string;
+  root: string;
+  archetype: string;
+  targets: ArchitectureTarget[];
+}
+
+export interface ArchitectureResponse {
+  zephyr_root: string;
+  boards: ArchitectureBoard[];
+  apps: ArchitectureApp[];
+  products: ArchitectureProduct[];
+  warnings: string[];
 }
 
 // ── /api/capabilities ────────────────────────────────────────────
@@ -316,31 +382,6 @@ export interface DebugMeta {
   on_close?: { resume?: boolean; method?: string };
 }
 
-/**
- * 一个「工作区模式」= 一份装配清单（`cockpit/profiles/<id>.yaml`）。
- *
- * 顶栏那个 classic ⇄ Zephyr 开关就渲染这张表，点一下打 `POST /api/mode`。
- * 前端**不按名字判断**"哪个是 Zephyr"—— 支持哪些模式、按钮叫什么、
- * 悬停说什么、切过去换哪份 host，全部由内核从 yaml 读出来给。
- */
-export interface ProfileMode {
-  /** 装配清单文件名（= `POST /api/mode` 的 mode 值） */
-  id: string;
-  /** 按钮文案（yaml `label:`，缺省 = id） */
-  label: string;
-  /** 悬停说明（yaml `desc:`） */
-  desc?: string;
-  /** 按钮顺序（yaml `order:`，缺省 999；按钮顺序是产品顺序，不归字母表管） */
-  order?: number;
-  /** 切到这个模式时替换 `ELAB_HOST` 的主机文件（空 = 只换装配） */
-  host?: string;
-  /** 上面那份主机文件是否存在（false = 这个按钮该置灰，而不是切过去报错） */
-  host_exists?: boolean;
-  active?: boolean;
-  workspaces?: string[];
-  archetype?: string[];
-}
-
 /** 驾驶舱装配清单的生效事实（`capabilities.meta.profile`）。 */
 export interface ProfileSummary {
   /** 生效清单的文件名 stem（= mode id） */
@@ -351,8 +392,6 @@ export interface ProfileSummary {
   path?: string;
   host?: string;
   available?: string[];
-  /** 全部可选模式（至少 1 条；只有 1 条时前端不渲染开关） */
-  modes?: ProfileMode[];
   workspaces?: string[];
   tools?: { include?: string[]; exclude?: string[] };
   /** 左栏工程可见范围（空 = 全可见） */

@@ -35,20 +35,7 @@
   white-space: nowrap;
 }
 
-/* 工作区模式开关（classic ⇄ zephyr）：紧挨品牌名 —— 它描述的是"这是哪个产品"，
-   不是"现在在哪个页面"，所以不该混在右侧那排工具按钮里。
-   ★ 切换期间整体降透明度且**挡住指针**：连点两次会让后端切两遍，
-     第二次基于"已切换"的状态再去判断 host，日志里会看到一组没意义的来回。 */
-.modeSwitch {
-  display: inline-flex;
-  align-items: center;
-  font-family: var(--elab-font-mono);
-  letter-spacing: 0.02em;
-}
-.modeBusy {
-  opacity: 0.6;
-  pointer-events: none;
-}
+/* classic 模式开关已移除：驾驶舱只服务当前 Zephyr 工作区。 */
 
 .headerSpacer {
   flex: 1 1 auto;

@@ -3,6 +3,11 @@
 Kharon 是面向 **Zephyr 工作区** 的独立 IDE / 开发闭环：编译、烧录、串口、调试、用量报告都走
 同一套 HTTP ICD，Web 驾驶舱（standalone cockpit）与 CLI 共用同一份内核状态。
 
+本仓是 **IDE / 内核层**，默认与同级的 `zephyr-workspace` 配对使用：
+`kharon-ide` 放 CLI、驾驶舱、provider 与服务；`zephyr-workspace` 是 west topdir，放
+`zephyr/`、`applications/`、`kharon-boards/`、`elab-app-common/` 与产品清单。
+当前实际路径可用 `.\kharon.cmd where` 查看。
+
 本仓是 **Zephyr 专属产品线**，不包含 DSH 插件、`elab.cmd`、芯片插件市场与 classic 多芯片发布线。
 旧仓 `dsh-elab-flow` 保留为 classic / DSH 发布线并冻结，已有 tag / release 不再变动。
 
@@ -18,14 +23,17 @@ cd kharon-ide
 Copy-Item config\host.local.yaml.example host.local.yaml
 notepad host.local.yaml
 
-# 2. 只读体检：缺什么、下一步跑什么
+# 2. 只读体检：缺什么、下一步跑什么（默认沿用当前工作区通道）
 .\kharon.cmd bootstrap --check
 
-# 3. 幂等补齐 venv + west 工作区，并安装随仓的 zephyr/framework 适配包（会联网；--offline 只查本机）
+# 3. 学习默认：全新 clone 走 learning 通道，跟随上游 + 全量 west update
 .\kharon.cmd bootstrap
 
+# 3b. 需要 CI / 复现实验时，走 pinned 通道：manifest 钉 commit + 6 个模块闭包
+.\kharon.cmd bootstrap --pinned
+
 # 4. 看当前工作区事实（拓扑 / 应用形态 / 模块 / 板子）
-.\kharon.cmd ws --app applications\stm32f4\f411_breath
+.\kharon.cmd ws --app ..\zephyr-workspace\applications\stm32f4\f411_breath
 
 # 5. 编译 + 探活
 .\kharon.cmd run -p f411_breath --steps doctor,build
@@ -37,14 +45,18 @@ notepad host.local.yaml
 `host.local.yaml` 只需写**本机绝对路径**；`config/host.kharon.profile.yaml` 里的仓库相对路径
 （`${ELAB_ROOT}/...`）已入库，换机器不用改。
 
+> **bootstrap 双通道**：全新 clone 默认 `learning`（跟随上游 + 全量 `west update`，适合学 Zephyr）；
+> `--pinned` 只拉 `zephyr.pinned_modules` 的 6 个模块并钉住 manifest commit，适合 CI / 回归 / 复现。
+> 当前已存在的工作区会沿用上次记录的通道；`--check` 不会因为切通道而误删模块。
+
 ## 目录
 
 | 路径 | 作用 |
 |---|---|
-| `applications/**` | freestanding 应用：`CMakeLists.txt` + `prj.conf` + `src/` + `boards/` |
-| `projects/kharon/**` | 工程登记（app + board + 产物 + 监视规则）；`kharon adapt` 可识别外来工程并写这里 |
-| `zephyr_modules/elab-boards/**` | 自研板 Zephyr module（经 `EXTRA_ZEPHYR_MODULES` 接入） |
-| `zephyr_modules/elab-app-common/**` | 应用公共层 module（`breath_sync` / `ota_engine` / `store`） |
+| `..\zephyr-workspace\applications\**` | freestanding 应用：`CMakeLists.txt` + `prj.conf` + `src/` +（可选）`boards/<board>.overlay` |
+| `..\zephyr-workspace\kharon-manifest\products\kharon\**` | 产品登记（app × board × `targets[]` × 产物 + 监视规则） |
+| `..\zephyr-workspace\kharon-boards\**` | 自研板 Zephyr module（板级真相，经 `EXTRA_ZEPHYR_MODULES` 接入） |
+| `..\zephyr-workspace\elab-app-common\**` | 应用公共层 module（`breath_sync` / `ota_engine` / `store`） |
 | `services/elab/**` | 内核：闭环编排、构建、烧录、串口、调试、项目/工作区解析 |
 | `cockpit/server.py` | standalone cockpit 的 HTTP 面与串口自描述 |
 | `providers/official/zephyr/**` | 工具链 provider（声明式，不含可执行插件） |
@@ -52,15 +64,17 @@ notepad host.local.yaml
 | `manifests/zephyr.west.yml` | west 允许清单（zephyr commit + module revisions） |
 | `docs/**` | 教程与设计文档 |
 
+`kharon-ide` 自身不装 Zephyr 树、不放 APP、不放板级；这些都在同级的 `zephyr-workspace`。
+
 ## 工作区识别
 
-- 仓库内应用：`kharon ws --app applications\<family>\<app>` → `app_role=standalone`
-- west 树内官方样例：`kharon ws --app west\zephyr\samples\hello_world` → `app_role=repo`
+- 工作区内应用：`kharon ws --app ..\zephyr-workspace\applications\<family>\<app>` → `app_role=workspace`
+- west 树内官方样例：`kharon ws --app ..\zephyr-workspace\zephyr\samples\hello_world` → `app_role=repo`
 - 外来工程：`kharon adapt <外部 app 目录>` 识别 `find_package(Zephyr)` / `prj.conf` / `boards/*.overlay`，
-  默认打印登记 YAML；确认后加 `--write` 落到 `projects/kharon/<name>.yaml`
+  默认打印登记 YAML；确认后加 `--write` 落到 `kharon-manifest\products\kharon\<name>.yaml`
 
-应用只依赖公共 module，不再用 `../../common` 相对路径；把某个应用目录单独拷走时，
-同时带上 `zephyr_modules/elab-app-common` 与板级 module 即可。
+应用只依赖公共 module，不再用 `../../common` 相对路径；板级只依赖 `kharon-boards`，不在 APP 里复制整块板级。
+新 APP 的顺序见 [`docs/tutorials/15`](docs/tutorials/15-Zephyr工作区双根与板级APP产品.md)。
 
 ## 与旧仓的关系
 
