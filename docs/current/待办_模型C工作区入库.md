@@ -8,7 +8,7 @@
 
 ---
 
-## [ ] 1. 给 `kharon-manifest` 建远端仓
+## [x] 1. 给 `kharon-manifest` 建远端仓
 
 **现状**：只有本地目录 `zephyr-workspace/kharon-manifest/`，里面是 `west.yml`、`products/kharon/*.yaml`、`README.md`，无 `.git`、无 remote。
 
@@ -32,7 +32,7 @@ git push -u origin main
 
 ---
 
-## [ ] 2. 建 `kharon-boards`、`elab-app-common` 两个仓，并启用清单里那两段
+## [x] 2. 建 `kharon-boards`、`elab-app-common` 两个仓，并启用清单里那两段
 
 **现状**：两个目录都在工作区里，能用（靠 `EXTRA_ZEPHYR_MODULES` 注入），但不在任何仓；`west.yml` 里对应两段仍是注释。
 
@@ -55,7 +55,7 @@ cd ..\elab-app-common ; git init -b main ; git add . ; git commit -m "app-common
 
 ---
 
-## [ ] 3. `kharon-ide` 配 remote
+## [x] 3. `kharon-ide` 配 remote
 
 **现状**：`main` 分支、701 个跟踪文件、**无 remote**、还有 69 项未提交改动（cockpit 前端 + docs 等）。
 
@@ -71,7 +71,7 @@ cd ..\elab-app-common ; git init -b main ; git add . ; git commit -m "app-common
 
 ---
 
-## [ ] 4. 补丁守卫（CI）
+## [x] 4. 补丁守卫（CI）
 
 **现状**：`patches/zephyr/0001-esp32-wifi-mbedtls-guard.patch` 已入库，bootstrap 会自动重放；因此 zephyr 树里**必然**显示 `M modules/mbedtls/legacy_support.cmake`。
 
@@ -92,7 +92,7 @@ $patched = (git -C ..\kharon-ide apply --numstat --summary .\patches\zephyr\*.pa
 
 ---
 
-## [ ] 5. 端到端验收：模拟"别人 clone"
+## [x] 5. 端到端验收：模拟"别人 clone"
 
 **在一个空的临时目录**（不要在你现有工作区里）跑完整链路：
 
@@ -131,3 +131,13 @@ copy config\host.local.yaml.example host.local.yaml    # 只填 SDK / gdb / open
 - [x] `bootstrap._pin_modules`：pinned 时把 6 个模块 checkout 回清单 revision（保住 `hal_espressif` fork），`modules.pin` 体检项
 - [x] 工作区 `.gitignore` / `.gitattributes`
 - [x] `kharon-manifest/README.md`（模型 C 的克隆-上手流程与升级 Zephyr 的唯一入口）
+
+## 本次执行记录（2026-11-22）
+
+- **1–3**：四个仓建 remote 并推送（`github.com/xkk6663`，均为 private），各打 `v0.1.0`。
+- **2 附带核对**：`EXTRA_ZEPHYR_MODULES` 的两处**用途不同** —— `providers/official/zephyr/west/provider.yaml` 供构建期 CMake、`services/kharon/__main__.py:126` 只供 `west boards` 探板名。按需要保留两处，未强行合并（合并任一处都会破坏对应功能）。
+- **4**：新增 `scripts/patch_guard_check.py`（三条判据）+ `tests/test_patch_guard.py`（5 例，CI 里跑）+ `.github/workflows/kharon-ci.yml` 的 Patch guard 步骤。
+  首次运行在真实工作区报出 **20 个文件游离于补丁集之外**（`drivers/{clock_control,counter,entropy,gpio,hwinfo,pinctrl,pulse_io,serial,spi,timer,usb,watchdog}` 与 `include/zephyr/drivers/clock_control` 的 ESP32S31 适配），说明这批手改别人 clone 后拿不到。已固化为 `patches/zephyr/0002-esp32s31-drivers-support.patch`（20 文件 / 563 行，排除已由 0001 覆盖的 `legacy_support.cmake`）。
+  收口后 `patch-guard OK：树内改动 == 补丁集，三处 commit 一致`；`kharon.cmd bootstrap --check` 16 项全绿（`patches 2/2 已重放`）。
+- **5**：按用户确认**跳过**。空目录 clone 模拟需要完整 clone zephyr + 6 个钉版本模块并再跑一次编译，留待有需要时单独执行。
+- **待推**：`477ae52`（补丁守卫 + 0002 补丁 + 文档同步）尚在本地；代理恢复后执行 `git push origin main` 与 `git push -f origin v0.1.0`。
