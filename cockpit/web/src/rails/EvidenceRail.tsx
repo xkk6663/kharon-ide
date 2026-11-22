@@ -35,6 +35,8 @@ export interface EvidenceRailProps {
   target: string;
   /** 架构视图里选 target → 回到阶段轨/工程选择 */
   onPickTarget: (project: string, target: string) => void;
+  /** 架构页新建产品后，刷新工程目录并选中新工程 */
+  onProjectCreated?: (project: string, target: string) => void;
   serialPort: string;
   /** 当前工作区（一级导航选中项，持久化在 layoutStore） */
   ws: WorkspaceId;
@@ -171,6 +173,7 @@ export function EvidenceRail({
   serialProject,
   target,
   onPickTarget,
+  onProjectCreated,
   serialPort: serialPortBase,
   ws,
   onWs,
@@ -787,6 +790,7 @@ export function EvidenceRail({
           selectedTarget={target}
           running={running}
           onPick={onPickTarget}
+          onProjectCreated={onProjectCreated}
         />
       ) : active.id === "debug" ? (
         <DebugWorkspace

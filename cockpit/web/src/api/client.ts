@@ -1,5 +1,6 @@
 import type {
   AdaptResponse,
+  ArchitectureCreateResult,
   ArchitectureResponse,
   ArchitectureSource,
   Capabilities,
@@ -198,6 +199,19 @@ export const api = {
   /** 校验后写回 YAML；后端只接受拓扑内名字，路径不接受客户端指定 */
   architectureSave: (kind: "product" | "app", name: string, text: string) =>
     post<ArchitectureSource>("/api/architecture/source", { kind, name, text }),
+  /**
+   * 新建工程：只提交 chip / board / app / target 语义选择；
+   * `preview` 时后端只生成 YAML 文本，不落盘。
+   */
+  architectureCreate: (body: {
+    name: string;
+    chip: string;
+    board: string;
+    app: string;
+    target?: string;
+    close_on?: string;
+    preview?: boolean;
+  }) => post<ArchitectureCreateResult>("/api/architecture/project", body),
   runs: () => req<RunsResponse>("/api/runs"),
   /**
    * 只读「当前在跑的 run」——**不扫历史目录**。

@@ -8,6 +8,7 @@ import type {
 } from "../api/types";
 import { api } from "../api/client";
 import { Button } from "../primitives/Button";
+import { Input } from "../primitives/Input";
 import { Pill, Tag } from "../primitives/Tag";
 import { Tooltip } from "../primitives/Tooltip";
 import s from "./ArchitectureWorkspace.module.css";
@@ -36,11 +37,22 @@ type EditState = {
   exists: boolean;
 };
 
+type CreateState = {
+  name: string;
+  chip: string;
+  board: string;
+  app: string;
+  target: string;
+  close_on: string;
+};
+
 export interface ArchitectureWorkspaceProps {
   selectedProduct: string;
   selectedTarget: string;
   running: boolean;
   onPick: (product: string, target: string) => void;
+  /** 新建产品后由 App 刷新目录并选中新工程 */
+  onProjectCreated?: (product: string, target: string) => void;
 }
 
 export function ArchitectureWorkspace({
@@ -48,6 +60,7 @@ export function ArchitectureWorkspace({
   selectedTarget,
   running,
   onPick,
+  onProjectCreated,
 }: ArchitectureWorkspaceProps) {
   const [data, setData] = useState<ArchitectureResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -58,6 +71,14 @@ export function ArchitectureWorkspace({
   const [editBusy, setEditBusy] = useState(false);
   const [editErr, setEditErr] = useState<string | null>(null);
   const [editMsg, setEditMsg] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [create, setCreate] = useState<CreateState>({
+    name: "", chip: "", board: "", app: "", target: "default", close_on: "",
+  });
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createPrev, setCreatePrev] = useState("");
+  const [createErr, setCreateErr] = useState<string | null>(null);
+  const [createMsg, setCreateMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -78,6 +99,7 @@ export function ArchitectureWorkspace({
   const boards = data?.boards ?? [];
   const apps = data?.apps ?? [];
   const products = data?.products ?? [];
+  const chips = data?.chips ?? [];
 
   const picked = useMemo<ArchitectureTarget | null>(() => {
     for (const p of products) {
@@ -130,6 +152,63 @@ export function ArchitectureWorkspace({
       setEditErr(errmsg(e));
     } finally {
       setEditBusy(false);
+    }
+  };
+
+  const openCreate = () => {
+    /* 新建工程从空白开始：不从当前选中产品复制芯片/APP，避免“想建 F411
+       却带着 ESP32 的 APP 一路点下去”的误配。 */
+    setCreate({
+      name: "",
+      chip: "",
+      board: "",
+      app: "",
+      target: "default",
+      close_on: "",
+    });
+    setCreatePrev("");
+    setCreateErr(null);
+    setCreateMsg(null);
+    setCreateOpen(true);
+  };
+
+  const createBody = (preview: boolean) => ({
+    name: create.name.trim(),
+    chip: create.chip,
+    board: create.board,
+    app: create.app,
+    target: create.target.trim() || "default",
+    close_on: create.close_on.trim(),
+    preview,
+  });
+
+  const previewCreate = async () => {
+    setCreateBusy(true);
+    setCreateErr(null);
+    setCreateMsg(null);
+    try {
+      const r = await api.architectureCreate(createBody(true));
+      setCreatePrev(r.text);
+    } catch (e) {
+      setCreateErr(errmsg(e));
+    } finally {
+      setCreateBusy(false);
+    }
+  };
+
+  const writeCreate = async () => {
+    setCreateBusy(true);
+    setCreateErr(null);
+    setCreateMsg(null);
+    try {
+      const r = await api.architectureCreate(createBody(false));
+      setCreateMsg(`已创建 ${r.name}（${r.target}）→ ${r.path}`);
+      await load();
+      onProjectCreated?.(r.name, r.target);
+    } catch (e) {
+      setCreateErr(errmsg(e));
+    } finally {
+      setCreateBusy(false);
     }
   };
 
@@ -238,6 +317,20 @@ export function ArchitectureWorkspace({
     );
   }
 
+  const createChip = chips.find((c) => c.id === create.chip);
+  const createBoards = createChip
+    ? boards.filter((b) => b.id === createChip.board)
+    : boards;
+  /**
+   * APP 过滤：声明了 board_scope 的只留当前板 / portable；未声明的（历史工程）
+   * 保持可见，避免把“没写 app.yaml”的老 APP 一刀切藏掉。
+   */
+  const createApps = create.board
+    ? apps.filter((a) => !a.board_scope
+        || a.board_scope === "portable"
+        || a.board_scope === create.board)
+    : apps;
+
   return (
     <div className={s.wrap}>
       <div className={s.bar}>
@@ -249,6 +342,9 @@ export function ArchitectureWorkspace({
           <Pill tone="blue">{boards.length} 板</Pill>
           <Pill tone="green">{apps.length} APP</Pill>
           <Pill tone="amber">{products.length} 产品</Pill>
+          <Button size="sm" variant="primary" onClick={openCreate}>
+            ＋ 新建工程
+          </Button>
           <Button size="sm" variant="toolbar" onClick={() => void load()} disabled={busy}>
             {busy ? "扫描中…" : "刷新"}
           </Button>
@@ -318,6 +414,112 @@ export function ArchitectureWorkspace({
           </div>
         )}
       </div>
+
+      {createOpen ? (
+        <div className={s.modalOverlay} role="dialog" aria-modal="true"
+          aria-label="新建工程">
+          <div className={s.modal}>
+            <div className={s.modalHead}>
+              <div>
+                <strong>新建工程 · 芯片 → 板级真相 → APP</strong>
+                <div className={s.modalPath}>
+                  三层选择都来自已安装芯片包 / topology；路径与 work_dir 由后端生成。
+                </div>
+              </div>
+              <Button size="sm" variant="toolbar"
+                onClick={() => { setCreateOpen(false); setCreateErr(null); setCreateMsg(null); }}>
+                关闭
+              </Button>
+            </div>
+
+            <div className={s.formGrid}>
+              <label>
+                <span>工程名</span>
+                <Input value={create.name} placeholder="例如 f411_dac_adc"
+                  onChange={(e) => { setCreate({ ...create, name: e.target.value }); setCreatePrev(""); }} />
+              </label>
+              <label>
+                <span>芯片</span>
+                <select value={create.chip}
+                  onChange={(e) => {
+                    const chip = chips.find((c) => c.id === e.target.value);
+                    setCreate({ ...create, chip: e.target.value, board: chip?.board || "" });
+                    setCreatePrev("");
+                  }}>
+                  <option value="">选芯片</option>
+                  {chips.map((c) => (
+                    <option key={c.id} value={c.id}>{c.part || c.id} · {c.target}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>板级真相</span>
+                <select value={create.board}
+                  disabled={!create.chip}
+                  onChange={(e) => { setCreate({ ...create, board: e.target.value, app: "", target: "default" }); setCreatePrev(""); }}>
+                  <option value="">{create.chip ? "选板" : "先选芯片"}</option>
+                  {createBoards.map((b) => (
+                    <option key={`${b.source}-${b.id}`} value={b.id}>
+                      {b.id} · {b.source === "kharon" ? "自研板" : "上游板"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>APP 层</span>
+                <select value={create.app}
+                  disabled={!create.board}
+                  onChange={(e) => {
+                    const app = createApps.find((a) => a.name === e.target.value);
+                    setCreate({
+                      ...create,
+                      app: e.target.value,
+                      /* APP 已有产品 target 时直接沿用（f411_dac_adc -> pwm_adc），
+                         省掉用户手打；没有就落 default。 */
+                      target: app?.products?.[0]?.target || "default",
+                    });
+                    setCreatePrev("");
+                  }}>
+                  <option value="">{create.board ? "选 APP" : "先选板级真相"}</option>
+                  {createApps.map((a) => (
+                    <option key={a.name} value={a.name}>{a.name} · {a.kind}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>target id</span>
+                <Input value={create.target} placeholder="default / pwm_adc"
+                  onChange={(e) => { setCreate({ ...create, target: e.target.value }); setCreatePrev(""); }} />
+              </label>
+              <label>
+                <span>串口闭环关键字（可选）</span>
+                <Input value={create.close_on} placeholder="例如 wave t="
+                  onChange={(e) => { setCreate({ ...create, close_on: e.target.value }); setCreatePrev(""); }} />
+              </label>
+            </div>
+
+            <div className={s.modalHint}>
+              芯片决定 `west -b` 与芯片包，板级真相决定 DTS/调试器，APP 决定源码根；
+              target id 决定 `<code>build/…/&lt;target&gt;</code>`。这里不复制任何一条路径。
+            </div>
+            {createErr ? <div className={s.error}>{createErr}</div> : null}
+            {createMsg ? <div className={s.okMsg}>{createMsg}</div> : null}
+            {createPrev ? (
+              <pre className={s.command}>{createPrev}</pre>
+            ) : null}
+            <div className={s.modalActions}>
+              <Button size="sm" variant="toolbar" disabled={createBusy}
+                onClick={() => void previewCreate()}>
+                {createBusy ? "生成中…" : "预览 manifest"}
+              </Button>
+              <Button size="sm" variant="primary" disabled={createBusy || !create.name || !create.chip || !create.board || !create.app}
+                onClick={() => void writeCreate()}>
+                {createBusy ? "创建中…" : "创建工程"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {editErr && !edit ? <div className={s.error}>读取失败：{editErr}</div> : null}
 

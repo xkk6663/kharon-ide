@@ -297,12 +297,34 @@ export interface ArchitectureProduct {
   targets: ArchitectureTarget[];
 }
 
+export interface ArchitectureChip {
+  id: string;
+  ref: string;
+  part: string;
+  /** west -b 的完整 target；板级真相取第一段 */
+  target: string;
+  board: string;
+  pack: string;
+  core: string;
+}
+
 export interface ArchitectureResponse {
   zephyr_root: string;
   boards: ArchitectureBoard[];
   apps: ArchitectureApp[];
   products: ArchitectureProduct[];
+  chips: ArchitectureChip[];
   warnings: string[];
+}
+
+/** `/api/architecture/project`：新建工程向导的预演/落盘响应 */
+export interface ArchitectureCreateResult {
+  name: string;
+  target: string;
+  path: string;
+  exists: boolean;
+  written: boolean;
+  text: string;
 }
 
 /** `/api/architecture/source` 的读写响应（路径由后端反查，客户端不传绝对路径） */

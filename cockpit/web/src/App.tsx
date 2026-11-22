@@ -353,6 +353,18 @@ export default function App() {
   );
 
   /**
+   * 架构页新建产品 → 刷新 `/api/projects` 目录，再选中新 product/target。
+   * 只 loadAll 不 select 会让左栏出现新卡、当前工程却仍是旧工程。
+   */
+  const onProjectCreated = useCallback(
+    async (project: string, target: string) => {
+      await loadAll(false);
+      await selectProject(project, target);
+    },
+    [loadAll, selectProject],
+  );
+
+  /**
    * 工作区切换：架构页是“全局拓扑”，进页时把证据轨撑到可用上限，
    * 离开时还原用户原来的宽度。否则 470px 的右栏塞不下 Board/APP/Product。
    */
@@ -579,6 +591,7 @@ export default function App() {
             serialProject={selected}
             target={selectedTarget}
             onPickTarget={onPickTarget}
+            onProjectCreated={(project, target) => void onProjectCreated(project, target)}
             serialPort={serialPort}
             ws={layout.ws}
             onWs={onWorkspace}

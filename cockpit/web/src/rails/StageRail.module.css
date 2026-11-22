@@ -3,7 +3,10 @@
   flex-direction: column;
   height: 100%;
   min-width: 0;
-  overflow: auto;
+  /* 只纵向滚：run 开始时右侧出现“取消/耗时”，曾把整列横向撑出滚动条，
+     导致左侧工程名/按钮被裁掉。横向一律锁死。 */
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--elab-bg-canvas);
 }
 
@@ -30,6 +33,7 @@
 .head {
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--elab-space-3);
   padding: var(--elab-space-3) var(--elab-space-4);
@@ -159,11 +163,13 @@
 .bar {
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--elab-space-2);
   padding: var(--elab-space-3) var(--elab-space-4);
   border-bottom: 1px solid var(--elab-border);
   background: var(--elab-bg-surface);
+  min-width: 0;
 }
 .barSpacer {
   flex: 1 1 auto;

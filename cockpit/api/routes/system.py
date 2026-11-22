@@ -38,7 +38,7 @@ from cockpit.platform.jobs import *  # noqa: F401,F403
 from cockpit.debug.helpers import *  # noqa: F401,F403
 from cockpit.debug.manager import *  # noqa: F401,F403
 from elab.topology import topology  # noqa: F401
-from elab.architecture_edit import read_source, write_source  # noqa: F401
+from elab.architecture_edit import read_source, write_source, create_project  # noqa: F401
 
 
 def _source_args(qs) -> tuple[str, str]:
@@ -66,6 +66,11 @@ def handle_get(h, path, qs):
 
 
 def handle_post(h, u, qs):
+    if getattr(u, "path", u) == "/api/architecture/project":
+        try:
+            return h._json(create_project(h.cfg, h._body()))
+        except ElabError as e:
+            return h._err(400, str(e))
     if getattr(u, "path", u) != "/api/architecture/source":
         return False
     body = h._body()
