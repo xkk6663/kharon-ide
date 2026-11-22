@@ -75,10 +75,12 @@ def stable(payload):
     """屏蔽**清单型**环境噪声，只保留契约字段。
 
     - ``serial.ports``：本机串口枚举结果（CI 无串口 = 空）；
-    - ``packs.installed``：本机已安装的适配包（干净 clone = 空）。
+    - ``packs.installed``：本机已安装的适配包（干净 clone = 空）；
+    - ``chip_info.measured``：从 ``zephyr.elf``/``map`` 读回的内存占用
+      （干净 clone 没有构建产物 = 空）。
 
-    这两个数组的元素 schema 由各自单元测试覆盖；这里关心的是
-    "字段有没有被删/改名"，不是"这台机器插了什么"。
+    这些容器里的元素 schema 由各自单元测试覆盖；这里关心的是
+    "字段有没有被删/改名"，不是"这台机器插了什么、编过没有"。
 
     ``provider.reasons`` 同理：它随本机串口数量变化（``auto`` 在插了
     F411 调试口 + 另一块板时会报歧义），不是接口契约字段。
@@ -97,6 +99,9 @@ def stable(payload):
         provider = project.get("provider")
         if isinstance(provider, dict):
             provider["reasons"] = []
+        chip_info = project.get("chip_info")
+        if isinstance(chip_info, dict):
+            chip_info["measured"] = {}
     return out
 
 

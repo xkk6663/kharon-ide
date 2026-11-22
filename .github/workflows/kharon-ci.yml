@@ -16,6 +16,10 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          # 本仓没有 requirements.txt / pyproject.toml，依赖清单是 requirements-dev.txt。
+          # 不显式指定时 setup-python 只找 **/requirements.txt 或 **/pyproject.toml，
+          # 找不到会直接让该步骤失败（而非降级为不缓存）。
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install dev deps
         run: python -m pip install -r requirements-dev.txt

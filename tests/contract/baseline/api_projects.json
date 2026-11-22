@@ -7,8 +7,6 @@
     "projects": [
       {
         "archetype": "<str>",
-        "target": "<str>",
-        "targets": [],
         "artifacts": {
           "bin": "<str>",
           "elf": "<str>",
@@ -31,18 +29,7 @@
           "family": "<str>",
           "frequency": "<str>",
           "id": "<str>",
-          "measured": {
-            "FLASH": {
-              "pct": "<num>",
-              "region": "<num>",
-              "used": "<num>"
-            },
-            "RAM": {
-              "pct": "<num>",
-              "region": "<num>",
-              "used": "<num>"
-            }
-          },
+          "measured": {},
           "memory": {},
           "pack": "<str>",
           "package": "<str>",
@@ -158,6 +145,8 @@
             "tool": "<str>"
           }
         },
+        "target": "<str>",
+        "targets": [],
         "tools": [],
         "work_dir": "<str>"
       }

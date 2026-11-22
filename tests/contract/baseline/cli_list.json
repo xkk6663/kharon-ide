@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "source": "elab list --json",
+    "source": "kharon list --json",
     "project": "f411_breath"
   },
   "shape": {
