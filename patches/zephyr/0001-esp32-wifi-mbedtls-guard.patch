@@ -1,0 +1,20 @@
+diff --git a/modules/mbedtls/legacy_support.cmake b/modules/mbedtls/legacy_support.cmake
+index 4d8a7049c..38ba5ae6e 100644
+--- a/modules/mbedtls/legacy_support.cmake
++++ b/modules/mbedtls/legacy_support.cmake
+@@ -88,7 +88,14 @@ endif()
+ 
+ # This is required because ESP32 drivers for BT and WiFi still rely on legacy
+ # crypto.
+-if(CONFIG_ESP32_BT_LE_CRYPTO_STACK_MBEDTLS OR CONFIG_ESP32_WIFI_MBEDTLS_CRYPTO)
++# NOTE (local patch, 2026-11-16): this tree ships only the crypto/hal modules,
++# so ZEPHYR_HOSTAP_MODULE_DIR is empty and MBEDTLS_REMOVED_MODULES_PATH resolves
++# to "/port/mbedtls/removed" — CMake then fails with "Cannot find source file".
++# Guard on existence so that ESP32_WIFI_ENTERPRISE (which selects
++# ESP32_WIFI_MBEDTLS_CRYPTO) can build here; the Espressif supplicant in the
++# prebuilt Wi-Fi blob does not actually need the removed mbedtls_ecdh module.
++if((CONFIG_ESP32_BT_LE_CRYPTO_STACK_MBEDTLS OR CONFIG_ESP32_WIFI_MBEDTLS_CRYPTO)
++   AND EXISTS "${MBEDTLS_REMOVED_MODULES_PATH}/ecdh.c")
+   target_sources(builtin PRIVATE ${MBEDTLS_REMOVED_MODULES_PATH}/ecdh.c)
+   target_compile_definitions(builtin PRIVATE
+     # Setting legacy build symbols is not allowed so we need to set this
