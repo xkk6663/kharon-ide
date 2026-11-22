@@ -1,2 +1,5 @@
 # 开发/CI 依赖（运行 `kharon` 本身只需 Python 标准库；west 由 bootstrap 装进 .deps/venv）
 pytest>=8,<10
+# scripts/app_boundary_check.py 与 scripts/patch_guard_check.py 要解析 west.yml / app.yaml；
+# 缺了它脚本会以 "缺少 PyYAML" 直接退出 1（本机常有全局安装，CI 干净环境则必红）。
+PyYAML>=6,<7
