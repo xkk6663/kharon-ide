@@ -28,6 +28,13 @@ jobs:
         # `python scripts/app_boundary_check.py --root $env:ZEPHYR_ROOT` 检查。
         run: python scripts/app_boundary_check.py --root tests/fixtures/app_boundary_ws
 
+      - name: Patch guard
+        # 补丁守卫（zephyr 树脏改动必须恰好等于 patches/zephyr/*）。CI 里没有
+        # 真实 Zephyr 工作区，所以用 tests/test_patch_guard.py 的临时根夹具跑
+        # 三条判据；真实工作区仍按
+        # `python scripts/patch_guard_check.py --root $env:ZEPHYR_ROOT` 本地检查。
+        run: python -m pytest tests/test_patch_guard.py -q
+
       - name: Pytest
         shell: pwsh
         env:

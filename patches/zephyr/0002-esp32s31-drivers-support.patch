@@ -1,0 +1,563 @@
+diff --git a/drivers/clock_control/CMakeLists.txt b/drivers/clock_control/CMakeLists.txt
+index 0aa751e29..264fe11a0 100644
+--- a/drivers/clock_control/CMakeLists.txt
++++ b/drivers/clock_control/CMakeLists.txt
+@@ -78,6 +78,7 @@ if(CONFIG_CLOCK_CONTROL_ESP32)
+   zephyr_library_sources_ifdef(CONFIG_SOC_SERIES_ESP32P4 clock_control_esp32_pmu.c)
+   zephyr_library_sources_ifdef(CONFIG_SOC_SERIES_ESP32S2 clock_control_esp32_rtc_cntl.c)
+   zephyr_library_sources_ifdef(CONFIG_SOC_SERIES_ESP32S3 clock_control_esp32_rtc_cntl.c)
++  zephyr_library_sources_ifdef(CONFIG_SOC_SERIES_ESP32S31 clock_control_esp32_pmu.c)
+ endif()
+ 
+ # zephyr-keep-sorted-start
+diff --git a/drivers/clock_control/Kconfig.esp32 b/drivers/clock_control/Kconfig.esp32
+index 994bd224f..91ec496c6 100644
+--- a/drivers/clock_control/Kconfig.esp32
++++ b/drivers/clock_control/Kconfig.esp32
+@@ -24,7 +24,7 @@ choice CLOCK_CONTROL_ESP32_RTC_CLK_SRC
+ 	default CLOCK_CONTROL_ESP32_RTC_CLK_SRC_EXT_OSC if $(ESP32_SLOW_CLK_SRC) = 9
+ 	default CLOCK_CONTROL_ESP32_RTC_CLK_SRC_INT_8MD256 if $(ESP32_SLOW_CLK_SRC) = 2 && \
+ 		!SOC_SERIES_ESP32C6 && !SOC_SERIES_ESP32H2 && !SOC_SERIES_ESP32C5 && \
+-		!SOC_SERIES_ESP32C61 && !SOC_SERIES_ESP32P4
++		!SOC_SERIES_ESP32C61 && !SOC_SERIES_ESP32P4 && !SOC_SERIES_ESP32S31
+ 	default CLOCK_CONTROL_ESP32_RTC_CLK_SRC_INT_RC
+ 	help
+ 	  Choose which clock is used as RTC clock source.
+@@ -46,7 +46,7 @@ config CLOCK_CONTROL_ESP32_RTC_CLK_SRC_EXT_OSC
+ config CLOCK_CONTROL_ESP32_RTC_CLK_SRC_INT_8MD256
+ 	bool "Internal oscillator, divided by 256"
+ 	depends on !SOC_SERIES_ESP32C6 && !SOC_SERIES_ESP32H2 && !SOC_SERIES_ESP32C5 && \
+-		!SOC_SERIES_ESP32C61 && !SOC_SERIES_ESP32P4
++		!SOC_SERIES_ESP32C61 && !SOC_SERIES_ESP32P4 && !SOC_SERIES_ESP32S31
+ 
+ endchoice
+ 
+diff --git a/drivers/clock_control/clock_control_esp32.c b/drivers/clock_control/clock_control_esp32.c
+index eb0561b88..c8576af09 100644
+--- a/drivers/clock_control/clock_control_esp32.c
++++ b/drivers/clock_control/clock_control_esp32.c
+@@ -9,9 +9,12 @@
+ 
+ #include "clock_control_esp32_priv.h"
+ 
+-#if defined(CONFIG_SOC_SERIES_ESP32P4)
++#if defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ #include <esp_private/esp_clk_tree_common.h>
+ #endif
++#if defined(CONFIG_SOC_SERIES_ESP32S31)
++#include <hal/systimer_ll.h>
++#endif
+ 
+ #include <zephyr/logging/log.h>
+ LOG_MODULE_REGISTER(clock_control, CONFIG_CLOCK_CONTROL_LOG_LEVEL);
+@@ -26,7 +29,8 @@ static enum clock_control_status clock_control_esp32_get_status(const struct dev
+ 		return CLOCK_CONTROL_STATUS_UNKNOWN;
+ 	}
+ 
+-#if defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32C61)
++#if defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                   \
++	defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	return CLOCK_CONTROL_STATUS_UNKNOWN;
+ #else
+ 	uint32_t clk_en_reg = periph_ll_get_clk_en_reg((shared_periph_module_t)module_id);
+@@ -55,7 +59,8 @@ static int clock_control_esp32_on(const struct device *dev, clock_control_subsys
+ 	int module_id = (int)sys;
+ 
+ 	if (module_id < ESP32_MODULE_MAX) {
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32C61)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32C61) &&                 \
++	!defined(CONFIG_SOC_SERIES_ESP32S31)
+ 		periph_module_enable((shared_periph_module_t)module_id);
+ #endif
+ 	} else {
+@@ -74,7 +79,8 @@ static int clock_control_esp32_off(const struct device *dev, clock_control_subsy
+ 	int module_id = (int)sys;
+ 
+ 	if (module_id < ESP32_MODULE_MAX) {
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32C61)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32C61) &&                 \
++	!defined(CONFIG_SOC_SERIES_ESP32S31)
+ 		periph_module_disable((shared_periph_module_t)module_id);
+ #endif
+ 	} else {
+@@ -170,7 +176,7 @@ static int clock_control_esp32_init(const struct device *dev)
+ 		return ret;
+ 	}
+ 
+-#if defined(CONFIG_SOC_SERIES_ESP32P4)
++#if defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	/* Until this runs, esp_clk_tree_enable_src() is a no-op and the PLL
+ 	 * reference branches keep their cold-boot state. On esp32p4 the 80 MHz
+ 	 * branch comes up gated, leaving the timers without a functional clock.
+@@ -188,6 +194,13 @@ static int clock_control_esp32_init(const struct device *dev)
+ 	 */
+ 	_timg_ll_enable_bus_clock(0, true);
+ 	_timg_ll_reset_register(0);
++
++#if defined(CONFIG_SOC_SERIES_ESP32S31)
++	/* Ungate and reset the system timer used as the kernel tick source */
++	systimer_ll_enable_bus_clock(true);
++	systimer_ll_reset_register();
++	systimer_ll_enable_sys_clock(true);
++#endif
+ #endif
+ 
+ 	return 0;
+diff --git a/drivers/clock_control/clock_control_esp32_pmu.c b/drivers/clock_control/clock_control_esp32_pmu.c
+index 97d793360..14f5ea421 100644
+--- a/drivers/clock_control/clock_control_esp32_pmu.c
++++ b/drivers/clock_control/clock_control_esp32_pmu.c
+@@ -8,7 +8,7 @@
+ /*
+  * Clock implementation for SoCs whose slow and CPU clocks are managed
+  * through the PMU and LP_CLKRST peripherals: ESP32-C5, ESP32-C6,
+- * ESP32-C61, ESP32-H2 and ESP32-P4.
++ * ESP32-C61, ESP32-H2, ESP32-P4 and ESP32-S31.
+  */
+ 
+ #include "clock_control_esp32_priv.h"
+@@ -21,6 +21,12 @@ LOG_MODULE_DECLARE(clock_control, CONFIG_CLOCK_CONTROL_LOG_LEVEL);
+ BUILD_ASSERT(DT_PROP(DT_INST(0, espressif_esp32_clock), slow_clk_src) !=
+ 		     ESP32_RTC_SLOW_CLK_32K_EXT_OSC,
+ 	     "ESP32-P4 has no external 32 kHz oscillator input");
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++BUILD_ASSERT((DT_PROP(DT_INST(0, espressif_esp32_clock), slow_clk_src) ==
++	      ESP32_RTC_SLOW_CLK_SRC_RC_SLOW) ||
++		     (DT_PROP(DT_INST(0, espressif_esp32_clock), slow_clk_src) ==
++		      ESP32_RTC_SLOW_CLK_SRC_XTAL32K),
++	     "ESP32-S31 RTC slow clock source must be RC_SLOW or XTAL32K");
+ #endif
+ 
+ int esp32_select_rtc_slow_clk(uint8_t slow_clk, bool fallback)
+@@ -39,6 +45,11 @@ int esp32_select_rtc_slow_clk(uint8_t slow_clk, bool fallback)
+ 	if (slow_clk == ESP32_RTC_SLOW_CLK_32K_EXT_OSC) {
+ 		return -ENOTSUP;
+ 	}
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++	if ((slow_clk != ESP32_RTC_SLOW_CLK_SRC_RC_SLOW) &&
++	    (slow_clk != ESP32_RTC_SLOW_CLK_SRC_XTAL32K)) {
++		return -ENOTSUP;
++	}
+ #else
+ 	if (slow_clk == ESP32_RTC_SLOW_CLK_32K_EXT_OSC) {
+ 		rtc_slow_clk_src = SOC_RTC_SLOW_CLK_SRC_OSC_SLOW;
+@@ -69,7 +80,7 @@ int esp32_select_rtc_slow_clk(uint8_t slow_clk, bool fallback)
+ 			if (rtc_slow_clk_src == ESP32_RTC_SLOW_CLK_SRC_XTAL32K) {
+ 				rtc_clk_32k_enable(true);
+ 			}
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ 			else {
+ 				rtc_clk_32k_enable_external();
+ 			}
+@@ -112,7 +123,7 @@ int esp32_select_rtc_slow_clk(uint8_t slow_clk, bool fallback)
+ 			if (cal_clk_32k == CLK_CAL_32K_XTAL) {
+ 				rtc_clk_32k_enable(false);
+ 			}
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ 			else {
+ 				rtc_clk_32k_disable_external();
+ 			}
+@@ -121,17 +132,19 @@ int esp32_select_rtc_slow_clk(uint8_t slow_clk, bool fallback)
+ 		}
+ 
+ 		/*
+-		 * The source enums differ per SoC (ESP32-C5 has no RC32K,
+-		 * ESP32-P4 has no OSC_SLOW), so each term is computed under the
+-		 * SoC guard where its enum exists.
++		 * The source enums differ per SoC (ESP32-C5, ESP32-C61 and
++		 * ESP32-S31 have no RC32K, ESP32-P4 and ESP32-S31 have no
++		 * OSC_SLOW), so each term is computed under the SoC guard
++		 * where its enum exists.
+ 		 */
+ 		bool xpd_xtal32k = (rtc_slow_clk_src == ESP32_RTC_SLOW_CLK_SRC_XTAL32K);
+ 		bool xpd_rc32k = false;
+ 
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ 		xpd_xtal32k |= (rtc_slow_clk_src == SOC_RTC_SLOW_CLK_SRC_OSC_SLOW);
+ #endif
+-#if !defined(CONFIG_SOC_SERIES_ESP32C5) && !defined(CONFIG_SOC_SERIES_ESP32C61)
++#if !defined(CONFIG_SOC_SERIES_ESP32C5) && !defined(CONFIG_SOC_SERIES_ESP32C61) &&                 \
++	!defined(CONFIG_SOC_SERIES_ESP32S31)
+ 		xpd_rc32k = (rtc_slow_clk_src == SOC_RTC_SLOW_CLK_SRC_RC32K);
+ #endif
+ 
+@@ -188,6 +201,12 @@ static void esp32_cpu_clock_init(const struct esp32_cpu_clock_config *cpu_cfg)
+ 	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_SCK_DCAP, rtc_clk_cfg.slow_clk_dcap);
+ 	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_ENIF_RTC_DREG, 1);
+ 	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_ENIF_DIG_DREG, 1);
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_SCK_DCAP, rtc_clk_cfg.slow_clk_dcap);
++	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_ENIF_RTC_DREG, 1);
++	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_ENIF_DIG_DREG, 1);
++	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_XPD_RTC_REG, 0);
++	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_XPD_DIG_REG, 0);
+ #elif defined(CONFIG_SOC_SERIES_ESP32P4)
+ 	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_SCK_DCAP, rtc_clk_cfg.slow_clk_dcap);
+ 	REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_FORCE_RTC_DREG, 1);
+@@ -205,8 +224,14 @@ static void esp32_cpu_clock_init(const struct esp32_cpu_clock_config *cpu_cfg)
+ #endif
+ 	/* clang-format on */
+ 
++#if defined(CONFIG_SOC_SERIES_ESP32S31)
++	REG_SET_FIELD(LP_AONCLKRST_FOSC_DFREQ_REG, LP_AONCLKRST_FOSC_DFREQ,
++		      rtc_clk_cfg.clk_8m_dfreq);
++#else
+ 	REG_SET_FIELD(LP_CLKRST_FOSC_CNTL_REG, LP_CLKRST_FOSC_DFREQ, rtc_clk_cfg.clk_8m_dfreq);
+-#if !defined(CONFIG_SOC_SERIES_ESP32C5) && !defined(CONFIG_SOC_SERIES_ESP32C61)
++#endif
++#if !defined(CONFIG_SOC_SERIES_ESP32C5) && !defined(CONFIG_SOC_SERIES_ESP32C61) &&                 \
++	!defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	REG_SET_FIELD(LP_CLKRST_RC32K_CNTL_REG, LP_CLKRST_RC32K_DFREQ, rtc_clk_cfg.rc32k_dfreq);
+ #endif
+ 
+@@ -218,7 +243,7 @@ static void esp32_cpu_clock_init(const struct esp32_cpu_clock_config *cpu_cfg)
+ 	 * at sleep entry to read stale values (0) and write an invalid
+ 	 * regulator bias which brown-outs the core.
+ 	 */
+-#if !defined(CONFIG_SOC_ESP32_ENABLE_PVT)
++#if !defined(CONFIG_SOC_ESP32_ENABLE_PVT) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	uint32_t hp_cali_dbias = get_act_hp_dbias();
+ 	uint32_t lp_cali_dbias = get_act_lp_dbias();
+ 
+@@ -232,13 +257,14 @@ static void esp32_cpu_clock_init(const struct esp32_cpu_clock_config *cpu_cfg)
+ 			  hp_cali_dbias, PMU_HP_MODEM_HP_REGULATOR_DBIAS_S);
+ 	SET_PERI_REG_BITS(PMU_HP_SLEEP_LP_REGULATOR0_REG, PMU_HP_SLEEP_LP_REGULATOR_DBIAS,
+ 			  lp_cali_dbias, PMU_HP_SLEEP_LP_REGULATOR_DBIAS_S);
+-#endif /* !CONFIG_SOC_ESP32_ENABLE_PVT */
++#endif /* !CONFIG_SOC_ESP32_ENABLE_PVT && !CONFIG_SOC_SERIES_ESP32S31 */
+ 
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	clk_ll_rc_fast_tick_conf();
+ #endif
+ 	esp_rom_output_tx_wait_idle(0);
+-#if !defined(CONFIG_SOC_SERIES_ESP32C5) && !defined(CONFIG_SOC_SERIES_ESP32C61)
++#if !defined(CONFIG_SOC_SERIES_ESP32C5) && !defined(CONFIG_SOC_SERIES_ESP32C61) &&                 \
++	!defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	rtc_clk_xtal_freq_update(rtc_clk_cfg.xtal_freq);
+ #endif
+ 
+@@ -296,6 +322,12 @@ int esp32_cpu_clock_configure(const struct esp32_cpu_clock_config *cpu_cfg)
+ 					? (new_config.source != SOC_CPU_CLK_SRC_XTAL)
+ 					: (cpu_cfg->clk_src != ESP32_CLK_SRC_RC_FAST ||
+ 					   new_config.source != SOC_CPU_CLK_SRC_RC_FAST)))) {
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++	/* The PLL marker covers CPLL (80/160/320 MHz) and PLL_F240M (240 MHz) */
++	if (!ret || (cpu_cfg->clk_src == ESP32_CPU_CLK_SRC_PLL
++			     ? (new_config.source != SOC_CPU_CLK_SRC_CPLL &&
++				new_config.source != SOC_CPU_CLK_SRC_PLL_F240M)
++			     : (new_config.source != cpu_cfg->clk_src))) {
+ #elif defined(CONFIG_SOC_SERIES_ESP32P4)
+ 	/*
+ 	 * P4 uses CPLL as its PLL source.
+@@ -311,7 +343,7 @@ int esp32_cpu_clock_configure(const struct esp32_cpu_clock_config *cpu_cfg)
+ 		return -EINVAL;
+ 	}
+ 
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	bool keep_pll = (cpu_cfg->clk_src == ESP32_CPU_CLK_SRC_XTAL);
+ 
+ 	if (keep_pll) {
+@@ -356,7 +388,7 @@ int esp32_cpu_clock_configure(const struct esp32_cpu_clock_config *cpu_cfg)
+ 	}
+ #endif
+ 
+-#if !defined(CONFIG_SOC_SERIES_ESP32P4)
++#if !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	if (keep_pll) {
+ 		rtc_clk_bbpll_remove_consumer();
+ 	}
+diff --git a/drivers/clock_control/clock_control_esp32_priv.h b/drivers/clock_control/clock_control_esp32_priv.h
+index 4046ffb71..cac0e3465 100644
+--- a/drivers/clock_control/clock_control_esp32_priv.h
++++ b/drivers/clock_control/clock_control_esp32_priv.h
+@@ -94,6 +94,18 @@
+ #include <soc/dport_access.h>
+ #include <hal/clk_tree_ll.h>
+ #include <esp_private/esp_pmu.h>
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++#define DT_CPU_COMPAT espressif_riscv
++#include <zephyr/dt-bindings/clock/esp32s31_clock.h>
++#include <soc/lp_clkrst_reg.h>
++#include <soc/pmu_reg.h>
++#include <soc/regi2c_dig_reg.h>
++#include <regi2c_ctrl.h>
++#include <esp32s31/rom/rtc.h>
++#include <soc/dport_access.h>
++#include <hal/clk_tree_ll.h>
++#include <esp_private/esp_pmu.h>
++#include <modem/modem_syscon_struct.h>
+ #endif
+ 
+ #include <zephyr/device.h>
+@@ -125,8 +137,8 @@
+  * whose slow/CPU clocks are driven through the RTC_CNTL peripheral
+  * (ESP32, ESP32-S2, ESP32-S3, ESP32-C2, ESP32-C3). The PMU variant covers
+  * the SoCs that use the PMU/LP_CLKRST peripherals (ESP32-C5, ESP32-C6,
+- * ESP32-H2, ESP32-P4). Exactly one implementation file is compiled per
+- * build, selected from CMakeLists.txt by SoC series.
++ * ESP32-C61, ESP32-H2, ESP32-P4, ESP32-S31). Exactly one implementation
++ * file is compiled per build, selected from CMakeLists.txt by SoC series.
+  */
+ int esp32_select_rtc_slow_clk(uint8_t slow_clk, bool fallback);
+ 
+diff --git a/drivers/counter/counter_esp32_rtc.c b/drivers/counter/counter_esp32_rtc.c
+index 58c332039..7e6a66af0 100644
+--- a/drivers/counter/counter_esp32_rtc.c
++++ b/drivers/counter/counter_esp32_rtc.c
+@@ -10,11 +10,16 @@
+ #include <esp_rom_sys.h>
+ #include <hal/rtc_timer_ll.h>
+ 
+-#if defined(SOC_RTC_TIMER_V2) && SOC_RTC_TIMER_V2
++#if (defined(SOC_RTC_TIMER_V2) && SOC_RTC_TIMER_V2) ||                                             \
++	(defined(SOC_RTC_TIMER_V3) && SOC_RTC_TIMER_V3)
+ #define SOC_HAS_LP_TIMER 1
++#if defined(SOC_RTC_TIMER_V3) && SOC_RTC_TIMER_V3
++#include <soc/rtc_timer_struct.h>
++#else
+ #include <soc/lp_timer_struct.h>
++#endif
+ #if defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                   \
+-	defined(CONFIG_SOC_SERIES_ESP32P4)
++	defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ #define LP_TIMER_INT_ST_ALARM LP_TIMER.int_st.soc_wakeup_int_st
+ #else
+ #define LP_TIMER_INT_ST_ALARM LP_TIMER.int_st.alarm
+diff --git a/drivers/counter/counter_esp32_tmr.c b/drivers/counter/counter_esp32_tmr.c
+index d7ea96206..89f71a107 100644
+--- a/drivers/counter/counter_esp32_tmr.c
++++ b/drivers/counter/counter_esp32_tmr.c
+@@ -161,7 +161,7 @@ static int counter_esp32_init(const struct device *dev)
+ 	timg_ll_enable_bus_clock(cfg->group, true);
+ 
+ 	/* Take a reference on the source so its PLL branch is ungated */
+-#if defined(CONFIG_SOC_SERIES_ESP32P4)
++#if defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	esp_clk_tree_enable_src(GPTIMER_CLK_SRC_DEFAULT, true);
+ #endif
+ 
+diff --git a/drivers/entropy/entropy_esp32.c b/drivers/entropy/entropy_esp32.c
+index 1ab77297c..95566d237 100644
+--- a/drivers/entropy/entropy_esp32.c
++++ b/drivers/entropy/entropy_esp32.c
+@@ -46,6 +46,11 @@ LOG_MODULE_REGISTER(entropy, CONFIG_ENTROPY_LOG_LEVEL);
+ #else
+ #define APB_CYCLE_WAIT_NUM (400 * 14)
+ #endif
++#elif defined CONFIG_SOC_SERIES_ESP32S31
++/* Same reading frequency as ESP32-P4, around 75 KHz, scaled by the
++ * 320 MHz default CPU frequency.
++ */
++#define APB_CYCLE_WAIT_NUM (320 * 14)
+ #else
+ #define APB_CYCLE_WAIT_NUM (16)
+ #endif
+diff --git a/drivers/gpio/gpio_esp32.c b/drivers/gpio/gpio_esp32.c
+index f33e639c6..498850ec5 100644
+--- a/drivers/gpio/gpio_esp32.c
++++ b/drivers/gpio/gpio_esp32.c
+@@ -55,7 +55,7 @@ LOG_MODULE_REGISTER(gpio_esp32, CONFIG_LOG_DEFAULT_LEVEL);
+ #define ESP32_CPU_ID() 0
+ #elif defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                 \
+ 	defined(CONFIG_SOC_SERIES_ESP32C6) || defined(CONFIG_SOC_SERIES_ESP32H2) ||                \
+-	defined(CONFIG_SOC_SERIES_ESP32P4)
++	defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ /* gpio structs in esp32c6/h2 are also different */
+ #define out            out.out_data_orig
+ #define in             in.in_data_next
+diff --git a/drivers/hwinfo/hwinfo_esp32.c b/drivers/hwinfo/hwinfo_esp32.c
+index d00dd6e4f..c1a2a071b 100644
+--- a/drivers/hwinfo/hwinfo_esp32.c
++++ b/drivers/hwinfo/hwinfo_esp32.c
+@@ -18,7 +18,8 @@ ssize_t z_impl_hwinfo_get_device_id(uint8_t *buffer, size_t length)
+ #if defined(CONFIG_SOC_SERIES_ESP32C2)
+ 	uint32_t rdata1 = sys_read32(EFUSE_RD_BLK2_DATA0_REG);
+ 	uint32_t rdata2 = sys_read32(EFUSE_RD_BLK2_DATA1_REG);
+-#elif defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61)
++#elif defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                 \
++	defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	uint32_t rdata1 = sys_read32(EFUSE_RD_MAC_SYS0_REG);
+ 	uint32_t rdata2 = sys_read32(EFUSE_RD_MAC_SYS1_REG);
+ #elif defined(CONFIG_SOC_SERIES_ESP32H2) || defined(CONFIG_SOC_SERIES_ESP32P4)
+diff --git a/drivers/pinctrl/pinctrl_esp32.c b/drivers/pinctrl/pinctrl_esp32.c
+index b6a940daf..34ae4ab69 100644
+--- a/drivers/pinctrl/pinctrl_esp32.c
++++ b/drivers/pinctrl/pinctrl_esp32.c
+@@ -29,7 +29,7 @@
+ #define out_w1tc out_w1tc.val
+ #elif defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                 \
+ 	defined(CONFIG_SOC_SERIES_ESP32C6) || defined(CONFIG_SOC_SERIES_ESP32H2) ||                \
+-	defined(CONFIG_SOC_SERIES_ESP32P4)
++	defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ /* gpio structs in esp32c6/h2 are also different */
+ #define out out.out_data_orig
+ #define in in.in_data_next
+diff --git a/drivers/pulse_io/pulse_io_esp32_rmt.c b/drivers/pulse_io/pulse_io_esp32_rmt.c
+index c479c1934..e5fff8e15 100644
+--- a/drivers/pulse_io/pulse_io_esp32_rmt.c
++++ b/drivers/pulse_io/pulse_io_esp32_rmt.c
+@@ -30,6 +30,8 @@
+ #include <zephyr/dt-bindings/pinctrl/esp32h2-gpio-sigmap.h>
+ #elif defined(CONFIG_SOC_SERIES_ESP32P4)
+ #include <zephyr/dt-bindings/pinctrl/esp32p4-gpio-sigmap.h>
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++#include <zephyr/dt-bindings/pinctrl/esp32s31-gpio-sigmap.h>
+ #endif
+ 
+ LOG_MODULE_REGISTER(pulse_io_esp32_rmt, CONFIG_PULSE_IO_LOG_LEVEL);
+diff --git a/drivers/serial/lpuart_esp32.c b/drivers/serial/lpuart_esp32.c
+index ddfbd6225..a3b0e17b8 100644
+--- a/drivers/serial/lpuart_esp32.c
++++ b/drivers/serial/lpuart_esp32.c
+@@ -13,7 +13,7 @@
+ 
+ #include <hal/uart_hal.h>
+ #if defined(CONFIG_SOC_ESP32C6_HPCORE) || defined(CONFIG_SOC_ESP32C5_HPCORE) ||                    \
+-	defined(CONFIG_SOC_ESP32P4_HPCORE)
++	defined(CONFIG_SOC_ESP32P4_HPCORE) || defined(CONFIG_SOC_ESP32S31_HPCORE)
+ #include <hal/uart_ll.h>
+ #include <hal/clk_tree_ll.h>
+ #include <hal/clk_tree_hal.h>
+@@ -289,7 +289,7 @@ static void lp_uart_esp32_isr(void *arg)
+ #endif /* CONFIG_UART_INTERRUPT_DRIVEN */
+ 
+ #if defined(CONFIG_SOC_ESP32C6_HPCORE) || defined(CONFIG_SOC_ESP32C5_HPCORE) ||                    \
+-	defined(CONFIG_SOC_ESP32P4_HPCORE)
++	defined(CONFIG_SOC_ESP32P4_HPCORE) || defined(CONFIG_SOC_ESP32S31_HPCORE)
+ 
+ static int lp_uart_esp32_param_config(const struct device *dev)
+ {
+@@ -318,6 +318,16 @@ static int lp_uart_esp32_param_config(const struct device *dev)
+ 
+ 	/* Initialize the controller to normal UART mode with default parameters */
+ 	uart_hal_init(&data->hal, 0);
++#elif CONFIG_SOC_SERIES_ESP32S31
++	/* The LP UART selects XTAL directly, so the baud rate does not depend on
++	 * the uncalibrated RC_FAST default.
++	 */
++	sclk_freq = clk_hal_xtal_get_freq_mhz() * MHZ(1);
++
++	lp_uart_ll_enable_bus_clock(0, true);
++	lp_uart_ll_reset_register(0);
++	lp_uart_ll_set_source_clk(data->hal.dev, LP_UART_SCLK_XTAL);
++	lp_uart_ll_sclk_enable(0);
+ #else
+ 	/* Get LP UART source clock frequency */
+ 	switch (clk_ll_rtc_fast_get_src()) {
+@@ -443,7 +453,7 @@ static int lp_uart_esp32_init(const struct device *dev)
+ 	return 0;
+ }
+ 
+-#endif /* CONFIG_SOC_ESP32C6_HPCORE || CONFIG_SOC_ESP32C5_HPCORE || CONFIG_SOC_ESP32P4_HPCORE */
++#endif /* HP core LP UART setup */
+ 
+ static DEVICE_API(uart, lp_uart_esp32_api) = {
+ 	.poll_in = lp_uart_esp32_poll_in,
+@@ -493,7 +503,7 @@ static const struct lp_uart_esp32_config lp_uart_esp32_cfg = {
+ };
+ 
+ #if defined(CONFIG_SOC_ESP32C6_HPCORE) || defined(CONFIG_SOC_ESP32C5_HPCORE) ||                    \
+-	defined(CONFIG_SOC_ESP32P4_HPCORE)
++	defined(CONFIG_SOC_ESP32P4_HPCORE) || defined(CONFIG_SOC_ESP32S31_HPCORE)
+ #define LP_UART_ESP32_INIT_FUNC lp_uart_esp32_init
+ #else
+ #define LP_UART_ESP32_INIT_FUNC NULL
+diff --git a/drivers/serial/serial_esp32_usb.c b/drivers/serial/serial_esp32_usb.c
+index 0deeaf530..f357200f8 100644
+--- a/drivers/serial/serial_esp32_usb.c
++++ b/drivers/serial/serial_esp32_usb.c
+@@ -115,7 +115,7 @@ static int serial_esp32_usb_init(const struct device *dev)
+ 
+ #if defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                   \
+ 	defined(CONFIG_SOC_SERIES_ESP32C6) || defined(CONFIG_SOC_SERIES_ESP32H2) ||                \
+-	defined(CONFIG_SOC_SERIES_ESP32P4)
++	defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ 	usb_serial_jtag_ll_phy_set_defaults();
+ #endif
+ 
+diff --git a/drivers/serial/uart_esp32.c b/drivers/serial/uart_esp32.c
+index 36452ad76..ce7d3cbd8 100644
+--- a/drivers/serial/uart_esp32.c
++++ b/drivers/serial/uart_esp32.c
+@@ -45,6 +45,10 @@
+ #include <esp32p4/rom/ets_sys.h>
+ #include <esp32p4/rom/gpio.h>
+ #include <zephyr/dt-bindings/clock/esp32p4_clock.h>
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++#include <esp32s31/rom/ets_sys.h>
++#include <esp32s31/rom/gpio.h>
++#include <zephyr/dt-bindings/clock/esp32s31_clock.h>
+ #endif
+ #ifdef CONFIG_UART_ASYNC_API
+ #include <zephyr/drivers/dma.h>
+diff --git a/drivers/spi/spi_esp32_spim.c b/drivers/spi/spi_esp32_spim.c
+index 45a517029..82ecd04f1 100644
+--- a/drivers/spi/spi_esp32_spim.c
++++ b/drivers/spi/spi_esp32_spim.c
+@@ -265,7 +265,7 @@ static int IRAM_ATTR spi_esp32_transfer(const struct device *dev)
+ 	for (size_t i = 0; i < ARRAY_SIZE(hal->hw->data_buf); ++i) {
+ #if defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                   \
+ 	defined(CONFIG_SOC_SERIES_ESP32C6) || defined(CONFIG_SOC_SERIES_ESP32H2) ||                \
+-	defined(CONFIG_SOC_SERIES_ESP32P4)
++	defined(CONFIG_SOC_SERIES_ESP32P4) || defined(CONFIG_SOC_SERIES_ESP32S31)
+ 		hal->hw->data_buf[i].val = 0;
+ #else
+ 		hal->hw->data_buf[i] = 0;
+diff --git a/drivers/timer/Kconfig.esp32 b/drivers/timer/Kconfig.esp32
+index 2bebe9334..23ed02311 100644
+--- a/drivers/timer/Kconfig.esp32
++++ b/drivers/timer/Kconfig.esp32
+@@ -9,7 +9,8 @@ config ESP32_SYS_TIMER
+ 	depends on SOC_SERIES_ESP32C2 || SOC_SERIES_ESP32C3 || \
+ 		(SOC_SERIES_ESP32C5 && !SOC_ESP32C5_LPCORE) || SOC_SERIES_ESP32C61 || \
+ 		(SOC_SERIES_ESP32C6 && !SOC_ESP32C6_LPCORE) || SOC_SERIES_ESP32H2 || \
+-		(SOC_SERIES_ESP32P4 && !SOC_ESP32P4_LPCORE)
++		(SOC_SERIES_ESP32P4 && !SOC_ESP32P4_LPCORE) || \
++		(SOC_SERIES_ESP32S31 && !SOC_ESP32S31_LPCORE)
+ 	default y
+ 	select TICKLESS_CAPABLE
+ 	select TIMER_HAS_64BIT_CYCLE_COUNTER
+diff --git a/drivers/usb/udc/Kconfig.dwc2 b/drivers/usb/udc/Kconfig.dwc2
+index b5cc62546..5b2e95be8 100644
+--- a/drivers/usb/udc/Kconfig.dwc2
++++ b/drivers/usb/udc/Kconfig.dwc2
+@@ -39,7 +39,7 @@ config UDC_DWC2_PTI
+ 
+ config UDC_DWC2_STACK_SIZE
+ 	int "UDC DWC2 driver internal thread stack size"
+-	default 1024 if SOC_SERIES_ESP32S3 || SOC_SERIES_ESP32P4
++	default 1024 if SOC_SERIES_ESP32S3 || SOC_SERIES_ESP32P4 || SOC_SERIES_ESP32S31
+ 	default 512
+ 	help
+ 	  DWC2 driver internal thread stack size.
+diff --git a/drivers/watchdog/wdt_esp32.c b/drivers/watchdog/wdt_esp32.c
+index 3b456f2b3..e7f4d356b 100644
+--- a/drivers/watchdog/wdt_esp32.c
++++ b/drivers/watchdog/wdt_esp32.c
+@@ -10,7 +10,7 @@
+ #if defined(CONFIG_SOC_SERIES_ESP32C5) || defined(CONFIG_SOC_SERIES_ESP32C61) ||                   \
+ 	defined(CONFIG_SOC_SERIES_ESP32C6) || defined(CONFIG_SOC_SERIES_ESP32H2)
+ #include <soc/lp_aon_reg.h>
+-#elif !defined(CONFIG_SOC_SERIES_ESP32P4)
++#elif !defined(CONFIG_SOC_SERIES_ESP32P4) && !defined(CONFIG_SOC_SERIES_ESP32S31)
+ #include <soc/rtc_cntl_reg.h>
+ #endif
+ #include <soc/timer_group_reg.h>
+diff --git a/include/zephyr/drivers/clock_control/esp32_clock_control.h b/include/zephyr/drivers/clock_control/esp32_clock_control.h
+index 116d41cb2..35f983a6b 100644
+--- a/include/zephyr/drivers/clock_control/esp32_clock_control.h
++++ b/include/zephyr/drivers/clock_control/esp32_clock_control.h
+@@ -39,6 +39,8 @@
+ #include <zephyr/dt-bindings/clock/esp32h2_clock.h>
+ #elif defined(CONFIG_SOC_SERIES_ESP32P4)
+ #include <zephyr/dt-bindings/clock/esp32p4_clock.h>
++#elif defined(CONFIG_SOC_SERIES_ESP32S31)
++#include <zephyr/dt-bindings/clock/esp32s31_clock.h>
+ #endif /* CONFIG_SOC_SERIES_ESP32xx */
+ 
+ /** @name ESP32 clock control subsystem identifiers */
