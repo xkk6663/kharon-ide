@@ -31,6 +31,11 @@ node_modules/
 # frame codegen 产物（由 profile 生成，POST /api/serial/frames/codegen write=true 可重建）
 generated/
 
+# 例外：contracts 生成物必须入库，否则 CI 的漂移守卫在干净 clone 下必然报“缺少生成物”。
+# 守卫判据是“入库文件 == 现在生成的结果”，只有入库才有意义。
+!cockpit/web/src/api/generated/
+!cockpit/web/src/api/generated/contracts.ts
+
 # 指向仓库外本机绝对路径的临时接入文件（换台机器即失效）
 projects/demo-fw.yaml
 projects/demo_fw.yaml
