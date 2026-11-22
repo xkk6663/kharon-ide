@@ -40,7 +40,8 @@ CHIPS = {
 class KharonProbeTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.root = Path(self.tmp.name)
+        # 同上：CI 的 TEMP 是 8.3 短名，产品侧返回 resolve() 后的长名。
+        self.root = Path(self.tmp.name).resolve()
         self.cfg = SimpleNamespace(root=self.root, all_chips=CHIPS)
         self.app = self.root / "applications" / "stm32f4" / "f411_breath"
         self.app.mkdir(parents=True)

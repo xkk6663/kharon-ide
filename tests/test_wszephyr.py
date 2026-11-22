@@ -72,7 +72,10 @@ serial:
 class WsBase(unittest.TestCase):
     def setUp(self):
         self._td = tempfile.TemporaryDirectory(prefix="elab-test-ws-")
-        self.root = Path(self._td.name)
+        # resolve() 让临时目录统一成长路径：CI 的 TEMP 是 8.3 短名
+        # （C:/Users/RUNNER~1/...），而产品侧返回的是 resolve() 后的长名，
+        # 不做这一步在 Windows runner 上会因 RUNNER~1 != runneradmin 全红。
+        self.root = Path(self._td.name).resolve()
         self._old_ws = os.environ.pop("ELAB_WORKSPACE", None)
         self._old_base = os.environ.pop("ZEPHYR_BASE", None)
         self.addCleanup(self._restore)

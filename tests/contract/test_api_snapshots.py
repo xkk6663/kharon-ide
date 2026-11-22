@@ -105,6 +105,27 @@ def stable(payload):
     return out
 
 
+def _products_available() -> bool:
+    """产品清单是否可见。
+
+    这四个快照锁的是驾驶舱接口**形状**，但 chip / provider / steps 的形状
+    本身就由"本机装了哪些工具链"和"产品清单在哪"决定：
+
+      - 产品清单在 ``zephyr-workspace/kharon-manifest/products``（另一个仓）；
+      - CI 只 checkout 本仓，没有 Zephyr 工作区，也就没有产品清单。
+
+    此时比出来的差异是环境而不是契约，硬比只会得到假红灯。所以无产品清单
+    时整体跳过，形状守卫留给开发机的双根工作区。
+    """
+    try:
+        from elab.config import Config
+
+        return bool(Config().projects)
+    except Exception:
+        return False
+
+
+@unittest.skipUnless(_products_available(), "需要产品清单（开发机双根工作区）；CI 干净 clone 下跳过")
 class ApiSnapshotTest(unittest.TestCase):
     maxDiff = None
 

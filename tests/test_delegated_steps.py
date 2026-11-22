@@ -150,7 +150,8 @@ tools:
 class DelegatedTestBase(unittest.TestCase):
     def setUp(self):
         self._td = tempfile.TemporaryDirectory(prefix="elab-test-deleg-")
-        self.root = Path(self._td.name)
+        # 同上：CI 的 TEMP 是 8.3 短名（RUNNER~1），产品侧返回 resolve() 后的长名。
+        self.root = Path(self._td.name).resolve()
         (self.root / "elab.host.yaml").write_text(HOST_YAML, encoding="utf-8")
         (self.root / "projects").mkdir(parents=True)
         (self.root / "examples" / "Fake" / "build").mkdir(parents=True)

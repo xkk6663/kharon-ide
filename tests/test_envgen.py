@@ -69,7 +69,12 @@ class EnvGenTest(unittest.TestCase):
         z = (self.cfg.host.get("tools") or {}).get("zephyr") or {}
         venv = str(z.get("venv_scripts") or "")
         self.assertTrue(venv)
-        venv = venv.replace("\\", "/").replace("${ELAB_ROOT}", str(ROOT).replace("\\", "/"))
+        venv = venv.replace("\\", "/")
+        # 两个名字都要替换：IDE_ROOT 是现行名，ELAB_ROOT 是兼容别名（见
+        # Config.root_ctx）。干净 clone 没有 host.local.yaml，走默认值
+        # ${IDE_ROOT}/...；本机有 host.local.yaml 时那条已是绝对路径。
+        for placeholder in ("${IDE_ROOT}", "${ELAB_ROOT}"):
+            venv = venv.replace(placeholder, str(ROOT).replace("\\", "/"))
         self.assertIn(venv, self.info["prepend"])
 
     def test_render_pwsh(self):
