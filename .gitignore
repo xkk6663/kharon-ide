@@ -56,3 +56,6 @@ projects/kharon.local.yaml
 # 旧布局主机文件，仅兼容旧用法；一律视为本机文件
 /elab.host.yaml
 /kharon.host.yaml
+
+# sha 校验测试的派生产物（1MB 固件样本曾误入库，2026-11-22 从历史移除）
+/tools/zephyr/_sha_test.js.*.bin
