@@ -17,6 +17,7 @@
 | [13 Zephyr OTA 局域网升级](tutorials/13-Zephyr_OTA局域网升级.md) | MCUboot + 局域网 OTA |
 | [14 Zephyr 调试区操作](tutorials/14-Zephyr调试区操作.md) | GDB、断点、变量、寄存器、实时内存 |
 | [15 双根与 Board / APP / Product](tutorials/15-Zephyr工作区双根与板级APP产品.md) | IDE/工作区双根、板级真相、APP 契约、产品 targets 与架构页 |
+| [16 F411 新建工程与 DAC-ADC 回环](tutorials/16-F411新建工程与DAC-ADC直连波形.md) | 新建工程向导实机、PWM 当 DAC、直连 PA1、四档串口波形与 IDE 修复 |
 
 ## current/ —— 现行口径
 

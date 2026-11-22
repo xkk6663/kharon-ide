@@ -38,4 +38,6 @@ CI / 回归 / 复现时加 `--pinned`，只拉 manifest 里钉住的 6 个模块
 ## 历史材料
 
 classic 时代的历史计划、调研与验收报告留在旧仓 `dsh-elab-flow`，**不是**本仓现行行为的依据。
+旧仓已于 2026-11-20 恢复为 classic 干净工作区，清理清单与备份分支见
+[旧仓 dsh-elab-flow 清理记录](旧仓dsh-elab-flow清理记录_2026-11-20.md)。
 本仓只保留与 Zephyr / Kharon 相关的设计文档。
