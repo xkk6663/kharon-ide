@@ -142,7 +142,7 @@ def _app_dirs(cfg: Config) -> list[Path]:
 
 
 def topology(cfg: Config) -> dict:
-    """返回驾驶舱架构视图：boards / apps / products / warnings。"""
+    """返回驾驶舱架构视图：boards / apps / products / chips / warnings。"""
     root = Path(cfg.zephyr_root)
     boards: dict[str, dict] = {}
     warnings: list[str] = []
@@ -255,5 +255,26 @@ def topology(cfg: Config) -> dict:
         "boards": boards_out,
         "apps": sorted(apps.values(), key=lambda x: x["name"]),
         "products": products,
+        "chips": _chip_records(cfg),
         "warnings": warnings,
     }
+
+
+def _chip_records(cfg: Config) -> list[dict]:
+    """已安装芯片的 UI 视图（只收 ``vendor/id`` 键，避免 id/ref 重复）。"""
+    out: list[dict] = []
+    for key, chip in sorted(cfg.all_chips.items()):
+        if "/" not in key:
+            continue
+        target = str(chip.get("target") or "")
+        out.append({
+            "id": str(chip.get("id") or key.split("/")[-1]),
+            "ref": key,
+            "part": str(chip.get("part") or chip.get("id") or ""),
+            "target": target,
+            "board": target.split("/")[0] if target else "",
+            "pack": str(chip.get("_pack") or ""),
+            "core": str(chip.get("core_name") or ""),
+        })
+    return sorted(out, key=lambda x: (x["board"] or "~", x["part"], x["id"]))
+

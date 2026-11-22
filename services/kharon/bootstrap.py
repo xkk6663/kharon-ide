@@ -59,6 +59,9 @@ PINNED_FALLBACK = (
     "mcuboot",
 )
 
+#: zephyr 树内本地补丁（唯一事实源入库，bootstrap 自动重放；见 docs/current/ADR-001）
+PATCH_DIR = ROOT / "patches" / "zephyr"
+
 
 def _venv_python() -> Path:
     if sys.platform.startswith("win"):
@@ -209,6 +212,93 @@ def _missing(modules: list[dict]) -> list[dict]:
     ]
 
 
+def _zephyr_dir(manifest: dict | None = None) -> Path:
+    """zephyr 本体（= ZEPHYR_BASE）在工作区里的落点。"""
+    z = (manifest or _load_manifest()).get("zephyr") or {}
+    return WEST / str(z.get("path") or "zephyr")
+
+
+def _git(zb: Path, *args: str, timeout: int = 120) -> tuple[int, str]:
+    return _run(["git", "-C", str(zb), *args], timeout=timeout)
+
+
+def _git_head(path: Path) -> str:
+    rc, out = _git(path, "rev-parse", "HEAD")
+    return out.strip() if rc == 0 else ""
+
+
+def _project_paths(manifest: dict) -> dict[str, str]:
+    return {str(p.get("name")): str(p.get("path") or "")
+            for p in (manifest.get("projects") or [])}
+
+
+def _pinned_revisions(manifest: dict) -> dict[str, str]:
+    return {str(p.get("name")): str(p.get("revision") or "")
+            for p in (manifest.get("projects") or [])
+            if str(p.get("name")) and str(p.get("revision") or "")}
+
+
+def _patches() -> list[Path]:
+    """``patches/zephyr/*.patch``，按文件名排序（顺序即补丁序）。"""
+    return sorted(PATCH_DIR.glob("*.patch")) if PATCH_DIR.is_dir() else []
+
+
+def _patch_state(zb: Path, patch: Path) -> str:
+    """``applied`` / ``pending`` / ``conflict``（只读，不落盘）。"""
+    if _git(zb, "apply", "--check", "--reverse", str(patch))[0] == 0:
+        return "applied"
+    if _git(zb, "apply", "--check", str(patch))[0] == 0:
+        return "pending"
+    return "conflict"
+
+
+def _apply_patches(manifest: dict) -> int:
+    """把本地补丁重放到 zephyr 树（幂等：已应用则跳过，冲突则报错不动手）。"""
+    zb = _zephyr_dir(manifest)
+    files = _patches()
+    if not files:
+        return 0
+    if not (zb / ".git").exists():
+        print(f"[kharon] 跳过补丁：{zb} 不是 git 工作树", file=sys.stderr)
+        return 0
+    for patch in files:
+        state = _patch_state(zb, patch)
+        if state == "applied":
+            continue
+        if state == "conflict":
+            print(f"[kharon] 补丁冲突：{patch.name}（上游改到同一行？需人工 rebase）",
+                  file=sys.stderr)
+            return 1
+        rc, out = _git(zb, "apply", str(patch))
+        if rc != 0:
+            print(out, file=sys.stderr)
+            return rc
+        print(f"[kharon] 已重放补丁 {patch.name} → {zb.name}/")
+    return 0
+
+
+def _pin_modules(manifest: dict) -> int:
+    """pinned 通道：把模块 checkout 到清单钉住的 revision（不跟随上游 import）。"""
+    paths = _project_paths(manifest)
+    revs = _pinned_revisions(manifest)
+    for name in _pinned_modules(manifest):
+        rel, want = paths.get(name, ""), revs.get(name, "")
+        if not rel or not want:
+            continue
+        p = WEST / rel
+        if not (p / ".git").exists():
+            continue                     # 缺模块由 modules 检查兜底，不在半成品上 git
+        head = _git_head(p)
+        if head == want:
+            continue
+        print(f"[kharon] 钉版本 {name}: {head[:12]} → {want[:12]}")
+        rc, out = _git(p, "checkout", "--detach", want)
+        if rc != 0:
+            print(out, file=sys.stderr)
+            return rc
+    return 0
+
+
 def _infer_channel() -> str:
     """没有状态文件时，从盘上形态推断通道。
 
@@ -338,6 +428,37 @@ def collect(channel: str) -> list[dict]:
         path = _resolve((tools.get(key) or {}).get("path"))
         add(f"tool.{key}", bool(path) and Path(path).is_file(), path or "未声明",
             f"{py} -m pip install {key}" if key != "ccache" else "安装 ccache 后重跑检查")
+
+    # 7. 本地补丁（patches/zephyr/*.patch 必须全部已重放，否则构建结果与登记不符）
+    pfiles = _patches()
+    if pfiles:
+        zb_p = _zephyr_dir(manifest)
+        states = {p.name: _patch_state(zb_p, p) for p in pfiles}
+        todo = [f"{n}:{s}" for n, s in states.items() if s != "applied"]
+        add("patches", not todo,
+            f"{len(states) - len(todo)}/{len(states)} 已重放" if pfiles else "无补丁",
+            f"{py} -m kharon bootstrap  # 自动重放；conflict 需人工 rebase" if todo else "")
+
+    # 8. pinned 通道：模块 HEAD 必须等于清单钉住的 revision
+    if channel == PINNED:
+        paths = _project_paths(manifest)
+        revs = _pinned_revisions(manifest)
+        drift: list[str] = []
+        checked = 0
+        for name in _pinned_modules(manifest):
+            rel, want = paths.get(name, ""), revs.get(name, "")
+            if not rel or not want:
+                continue
+            p = WEST / rel
+            if not (p / ".git").exists():
+                continue
+            checked += 1
+            head = _git_head(p)
+            if head and head != want:
+                drift.append(f"{name}:{head[:8]}≠{want[:8]}")
+        add("modules.pin", not drift,
+            f"{checked}/{checked} 与清单一致" if not drift else "漂移：" + ", ".join(drift[:3]),
+            f"{py} -m kharon bootstrap --pinned")
     return checks
 
 
@@ -453,6 +574,17 @@ def apply(channel: str, offline: bool) -> int:
             return rc
 
     rc = _update_workspace(py, channel, manifest)
+    if rc != 0:
+        return rc
+
+    # west update 只会把模块带到"上游 import 给的 revision"；pinned 要再钉回清单那一条
+    if channel == PINNED:
+        rc = _pin_modules(manifest)
+        if rc != 0:
+            return rc
+
+    # 树内本地补丁（唯一事实源在 IDE 仓 patches/zephyr/，不留在工作区手工改）
+    rc = _apply_patches(manifest)
     if rc != 0:
         return rc
 

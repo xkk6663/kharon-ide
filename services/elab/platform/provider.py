@@ -22,7 +22,7 @@ import os
 import re
 import shutil
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Literal, Mapping, Protocol
 
@@ -530,6 +530,40 @@ def _cmake_fallback(cfg: Config, proj: dict, step: str, decl: StepDecl,
     )
 
 
+def _reuse_west_build(proj: dict, decl: StepDecl) -> StepDecl:
+    """已有 CMakeCache 时去掉 ``-b`` / 应用位置参数，只做增量构建。
+
+    ``west build -b <board> <app> -d <dir>`` 每次都会重新跑一遍 CMake
+    configure；本机实测 F411 工程 4m43s，其中 configure 占 175s。缓存已存在时
+    ``west build -d <dir>`` 会直接复用缓存，实测同样改一处 C 源码只要 5s。
+    """
+    if decl.kind != "external" or "west" not in decl.cmd or "build" not in decl.cmd:
+        return decl
+    work_dir = str((proj.get("build") or {}).get("work_dir") or "")
+    if not work_dir or not (Path(work_dir) / "CMakeCache.txt").is_file():
+        return decl
+    cmd = list(decl.cmd)
+    try:
+        i_board = cmd.index("-b")
+        i_dir = cmd.index("-d")
+    except ValueError:
+        return decl
+    # 只接受 `west build -b ... <app> -d ...` 这一种模板；顺序变了就不动，
+    # 宁可慢一次，也不猜错参数。
+    if i_board > i_dir or i_board + 1 >= len(cmd):
+        return decl
+    inc = cmd[:i_board] + cmd[i_dir:]
+    # 缓存检查用的是 proj.build.work_dir；命令里的 -d 必须跟它一致，
+    # 否则会出现“在这个目录判缓存、去另一个目录构建”的假增量。
+    if i_board + 1 < len(inc):
+        inc[i_board + 1] = work_dir
+    # `-D...` 是 configure 参数；缓存已存在时 west 会把它们当成 source 位置参数
+    # （实测 "source directory -DCMAKE_C_COMPILER_LAUNCHER=ccache does not exist"）。
+    inc = [tok for tok in inc if not tok.startswith("-D")]
+    return replace(decl, cmd=tuple(inc),
+                   label=f"{decl.label or 'build'} · 增量")
+
+
 class DataProvider:
     """外带链：``provider.yaml`` 声明式命令模板。"""
     def __init__(self, man: dict, path: str):
@@ -573,6 +607,9 @@ class DataProvider:
                 k: run_mod._sub_text(str(v), subs, {}, self.ref.name, cfg)
                 for k, v in artifacts.items()
             }
+        steps = dict(steps)
+        if "build" in steps:
+            steps["build"] = _reuse_west_build(proj, steps["build"])
         return ResolvedToolchain(provider=self.ref, steps=steps,
                                  artifacts=artifacts,
                                  debug=dict(self.man.get("debug") or {}))

@@ -643,6 +643,15 @@ def cmd_build(cfg: Config, args) -> int:
     silent = (lambda *a, **k: None) if args.json else print
     seen: set = set()          # ★ C1：同批去重（--all 时 boot 只构建一次）
     for name in names:
+        # ★ 多 target 产品必须在**所有** plan/provider 解析之前选定 target：
+        #   provider 的 `${chip.target}` 与 target 级 `build.work_dir` 都依赖它。
+        #   之前 `build --target` 只进了 argparse、没进 Config，导致：
+        #     - work_dir 字面量 `${target}` 落进磁盘路径
+        #     - `${chip.target}` 解析为空，west 命令里连 `-b` 都没有
+        #   这是 2026-11-20 跑 f411_dac_adc 实测踩到的。
+        tgt = getattr(args, "target", None)
+        if tgt:
+            cfg.select_target(name, tgt)
         # ★ 先问 provider：绑了 provider 的工程，build 的归属就是它，不再由 plan.py 猜
         prov = _provider_build(cfg, name, args)
         if prov is not None:
