@@ -230,5 +230,19 @@ def main(argv: list[str] | None = None) -> int:
     return 0 if not violations else 1
 
 
+def _widen_stdio() -> None:
+    """Windows 控制台默认 cp1252/charmap，打印中文（含全角冒号）会 UnicodeEncodeError。
+
+    GitHub Actions 的 windows runner 就是这个默认值，脚本会在**成功路径**上
+    以退出码 1 结束。这里把 stdout/stderr 重设为 UTF-8，让输出与平台无关。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+
 if __name__ == "__main__":
+    _widen_stdio()
     raise SystemExit(main())

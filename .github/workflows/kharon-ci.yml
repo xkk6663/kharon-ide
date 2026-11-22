@@ -9,6 +9,10 @@ jobs:
   test:
     # 本仓内核是纯 Python + 临时根目录夹具；不需要 Zephyr SDK / 探针即可跑测试。
     runs-on: windows-latest
+    env:
+      # windows runner 的控制台默认 charmap，Python 打印中文会 UnicodeEncodeError；
+      # 脚本自身也做了 stdout.reconfigure，这里再兜住 pytest 及其子进程。
+      PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4
 
