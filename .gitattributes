@@ -12,3 +12,9 @@ cockpit/web/dist/** linguist-generated=true linguist-detectable=false
 
 # ── 事件日志是数据不是代码 ──────────────────────────────────────────
 *.jsonl linguist-detectable=false
+
+# ── 逐字节校验的生成物必须固定 LF ──────────────────────────────────
+# scripts/check-generated-contracts.mjs 用 `actual !== text` 做严格比对。
+# GitHub 的 windows runner 默认 core.autocrlf=true，若无此规则，checkout
+# 出来的是 CRLF，而生成器只写 LF → 守卫会在 CI 上假红（本地看不出来）。
+cockpit/web/src/api/generated/contracts.ts text eol=lf
